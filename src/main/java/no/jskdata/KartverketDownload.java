@@ -13,7 +13,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.logging.Logger;
 
 import org.jsoup.Connection;
 import org.jsoup.Connection.Method;
@@ -21,7 +20,6 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 
-import com.google.common.collect.Lists;
 import com.google.gson.Gson;
 
 public class KartverketDownload {
@@ -37,11 +35,6 @@ public class KartverketDownload {
     private final String baseUrl = "http://data.kartverket.no";
 
     private final Gson gson = new Gson();
-
-    private static final Logger log = Logger.getLogger(KartverketDownload.class.getName());
-
-    // guessed value..
-    private static final int MAX_CHART_SIZE = 50;
 
     // the big jobs are slow..
     private static final int TIMEOUT_MILLIS = 1000 * 30;
@@ -121,8 +114,7 @@ public class KartverketDownload {
         String serviceName = conf.get("service_name");
         String jsonUrl = jsonUrlByServiceName.get(serviceName);
         if (jsonUrl == null) {
-            log.info("unknown service name: " + serviceName);
-            return;
+            throw new IOException("unknown service name: " + serviceName);
         }
 
         HttpURLConnection conn = (HttpURLConnection) new URL(jsonUrl).openConnection();
@@ -130,7 +122,7 @@ public class KartverketDownload {
                 FeatureCollection.class);
         for (Feature feature : featureCollection.features) {
 
-            // norgeskart-xdm.js portet to java
+            // norgeskart-xdm.js ported to java
             String name = feature.get("n");
             String filename;
             if (feature.id == null) {
@@ -155,91 +147,19 @@ public class KartverketDownload {
             filename = filename.replace('å', 'a');
             filename = filename.replace('Å', 'A');
 
-            log.info("filename: " + filename);
-
             restFileNames.add(filename);
         }
 
-        // first do the known ones without using basket
+        // find urls
         for (String fileName : new ArrayList<>(restFileNames)) {
             String url = createUrl(datasetId, fileName);
             if (url == null) {
-                continue;
+                throw new IOException("do not know url prefix for dataset id: " + datasetId);
             }
             restFileNames.remove(fileName);
             urls.add(url);
         }
 
-        // check the download list for previous downloads that are still valid
-        downloadList();
-
-        // use the basket for the rest. hopefully no need for this as of
-        // createUrl step above
-        for (List<String> someFileNames : Lists.partition(new ArrayList<>(restFileNames), MAX_CHART_SIZE)) {
-
-            // click add to chart
-            Element addToChartForm = d.select("form").get(0);
-            String addToChartUrl = baseUrl + addToChartForm.attr("action");
-            Map<String, String> formParameters = new HashMap<>();
-            formParameters.putAll(formInputParameters(addToChartForm));
-            formParameters.put("line_item_fields[field_selection][und][0][value]", gson.toJson(someFileNames));
-            formParameters.put("line_item_fields[field_selection_text][und][0][value]",
-                    someFileNames.size() + " filer");
-            log.info(formParameters.toString());
-            Connection.Response res2 = Jsoup.connect(addToChartUrl).timeout(TIMEOUT_MILLIS).cookies(cookies)
-                    .method(Method.POST).data(formParameters).execute();
-            if (!res2.body().contains("ble lagt i")) {
-                log.info("not in chart :(");
-                return;
-            }
-
-            // click checkout
-            Connection.Response checkoutResult = Jsoup.connect(baseUrl + "/download/checkout").cookies(cookies)
-                    .execute();
-            Document checkoutDocument = checkoutResult.parse();
-            String[] urlParts = checkoutResult.url().toString().split("/");
-            String orderNumber = urlParts[urlParts.length - 2];
-            log.info("order number: " + orderNumber);
-
-            // click continue
-            Element continueForm = checkoutDocument.select("form").get(0);
-            String continueUrl = baseUrl + continueForm.attr("action");
-            Map<String, String> continueParameters = new HashMap<>();
-            continueParameters.putAll(formInputParameters(continueForm));
-            continueParameters.put("op", "Fortsett");
-            log.info(continueParameters.toString());
-            Jsoup.connect(continueUrl).timeout(TIMEOUT_MILLIS).cookies(cookies).data(continueParameters)
-                    .method(Method.POST).execute();
-        }
-
-        // get the rest of the urls. hopefully
-        downloadList();
-
-        log.info("rest: " + restFileNames);
-        log.info("urls: " + urls);
-
-    }
-
-    private void downloadList() throws IOException {
-
-        if (restFileNames.isEmpty()) {
-            return;
-        }
-
-        Connection.Response downloadResult = Jsoup.connect(baseUrl + "/download/mine/downloads").timeout(TIMEOUT_MILLIS)
-                .cookies(cookies).execute();
-        Document downloadDocument = downloadResult.parse();
-        for (Element a : downloadDocument.select("a[href]")) {
-            String url = a.attr("href");
-            if (!url.startsWith("http")) {
-                continue;
-            }
-            String filename = url.substring(url.lastIndexOf('/') + 1);
-            if (!restFileNames.remove(filename)) {
-                continue;
-            }
-            urls.add(url);
-        }
     }
 
     private Map<String, String> formInputParameters(Element form) {
@@ -292,11 +212,7 @@ public class KartverketDownload {
 
     static String createUrl(String datasetId, String fileName) {
         String urlPrefix = urlPrefixByDatasetName.get(datasetId);
-        if (urlPrefix == null) {
-            log.info("does not know url prefix for dataset id: " + datasetId);
-            return null;
-        }
-        return urlPrefix + fileName;
+        return urlPrefix == null ? null : urlPrefix + fileName;
     }
 
     private static class FeatureCollection {

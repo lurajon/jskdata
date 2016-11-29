@@ -20,6 +20,6 @@ mvn -Ddata.kartverket.no.username=... -Ddata.kartverket.no.password=... test
 ## Thanks
 * @atlefren for [skdata](https://github.com/atlefren/skdata) that jskdata is mostly a java variant of.
 * @jhy for [jsoup](https://github.com/jhy/jsoup) that jskdata uses for HTML parsing.
-* Google for Guava and Gson
-* Kartverket
+* Google for Gson.
+* Kartverket.
 
