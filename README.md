@@ -5,6 +5,7 @@ A java downloader for http://data.kartverket.no/download/
 ## Usage
 ```
   KartverketDownload kd = new KartverketDownload(username, password);
+  kd.login();
   kd.dataset("administrative-fylker-utm-32-fylkesinndeling");
   for (String url : kd.urls()) {
       HttpURLConnection conn = kd.openConnection(url);
