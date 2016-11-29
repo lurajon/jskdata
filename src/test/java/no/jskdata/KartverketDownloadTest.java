@@ -36,14 +36,12 @@ public class KartverketDownloadTest extends TestCase {
         for (String datasetId : Arrays.asList("administrative-fylker-utm-32-fylkesinndeling",
                 "vbase-utm-33-fylkesinndeling")) {
             kd.dataset(datasetId);
-            assertTrue(kd.restFileNames().isEmpty());
             assertFalse(kd.urls().isEmpty());
             kd.clear();
             assertTrue(kd.urls().isEmpty());
         }
 
         kd.dataset("n50-kartdata-utm-33-kommunevis-inndeling");
-        assertTrue(kd.restFileNames().isEmpty());
         assertFalse(kd.urls().isEmpty());
 
         // try to download one of the files

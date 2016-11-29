@@ -6,7 +6,6 @@ import java.io.InputStreamReader;
 import java.io.StringReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -29,7 +28,6 @@ public class KartverketDownload {
 
     private Map<String, String> cookies;
 
-    private final Set<String> restFileNames = new HashSet<>();
     private final Set<String> urls = new HashSet<>();
 
     private final String baseUrl = "http://data.kartverket.no";
@@ -147,16 +145,11 @@ public class KartverketDownload {
             filename = filename.replace('å', 'a');
             filename = filename.replace('Å', 'A');
 
-            restFileNames.add(filename);
-        }
-
-        // find urls
-        for (String fileName : new ArrayList<>(restFileNames)) {
-            String url = createUrl(datasetId, fileName);
+            // find url
+            String url = createUrl(datasetId, filename);
             if (url == null) {
                 throw new IOException("do not know url prefix for dataset id: " + datasetId);
             }
-            restFileNames.remove(fileName);
             urls.add(url);
         }
 
@@ -189,16 +182,11 @@ public class KartverketDownload {
         return cookies != null && !cookies.isEmpty();
     }
 
-    public Set<String> restFileNames() {
-        return Collections.unmodifiableSet(restFileNames);
-    }
-
     public Set<String> urls() {
         return Collections.unmodifiableSet(urls);
     }
 
     public void clear() {
-        restFileNames.clear();
         urls.clear();
     }
 
