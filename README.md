@@ -25,11 +25,14 @@ A java downloader for http://data.kartverket.no/download/ and https://download.g
 
 ## Test
 ```
-mvn -Ddata.kartverket.no.username=... -Ddata.kartverket.no.password=... -Dgeonorge.username=... -Dgeonorge.password=... test
+mvn -Ddata.kartverket.no.username=... \
+    -Ddata.kartverket.no.password=... \
+    -Dgeonorge.username=... \
+    -Dgeonorge.password=... test
 ```
 
 ## Thanks
-* [@atlefren](https://github.com/atlefren/) for [skdata](https://github.com/atlefren/skdata) that jskdatas KartverketDownload is mostly a java variant of.
+* [@atlefren](https://github.com/atlefren/) for [skdata](https://github.com/atlefren/skdata) that jskdatas `KartverketDownload` is mostly a java variant of.
 * [@jhy](https://github.com/jhy/) for [jsoup](https://github.com/jhy/jsoup) that jskdata uses for HTML parsing.
 * Google for Gson and Guava.
 * Kartverket.
