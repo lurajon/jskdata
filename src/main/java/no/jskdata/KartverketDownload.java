@@ -21,6 +21,9 @@ import org.jsoup.nodes.Element;
 
 import com.google.gson.Gson;
 
+/**
+ * A way to access http://data.kartverket.no/download/ from java
+ */
 public class KartverketDownload {
 
     private final String username;

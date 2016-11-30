@@ -1,0 +1,188 @@
+package no.jskdata;
+
+import java.io.IOException;
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.jsoup.Connection;
+import org.jsoup.Connection.Method;
+import org.jsoup.Jsoup;
+import org.jsoup.helper.HttpConnection.KeyVal;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+
+import com.google.common.collect.HashBasedTable;
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Multimap;
+import com.google.common.collect.Table;
+
+/**
+ * A way to access https://download.geonorge.no/skdl2/ from java
+ */
+public class GeoNorgeDownload {
+
+    private final String username;
+    private final String password;
+
+    private final String baseUrl = "https://download.geonorge.no";
+    private final String ngisnl2 = baseUrl + "/skdl2/nl2prot/ngisnl2";
+
+    private final Map<String, String> cookies = new HashMap<>();
+
+    private final Table<String, Integer, String> lookup = HashBasedTable.create();
+
+    private final Multimap<String, Integer> selection = HashMultimap.create();
+
+    private final static int TIMEOUT_MS = 1000 * 60;
+
+    public GeoNorgeDownload(String username, String password) {
+        this.username = username;
+        this.password = password;
+    }
+
+    public void login() throws IOException {
+
+        Connection.Response r1 = Jsoup.connect(baseUrl + "/skdl2/").execute();
+        addCookies(r1.cookies());
+
+        Map<String, String> params = new HashMap<>();
+        params.put("userId", username);
+        params.put("password", password);
+        Connection.Response r2 = Jsoup.connect(baseUrl + "/skdl2/nl2unprot/logon1").cookies(cookies).data(params)
+                .method(Method.POST).execute();
+        addCookies(r2.cookies());
+        Document d2 = r2.parse();
+
+        // extract selects
+        for (Element select : d2.select("select")) {
+            String name = select.attr("name");
+            for (Element option : select.select("option")) {
+                Integer value = Integer.valueOf(option.attr("value"));
+                String text = option.text();
+                lookup.put(name, value, text);
+            }
+        }
+
+        if (lookup.isEmpty()) {
+            throw new IOException("could not download lookup tables");
+        }
+
+        clearSelection();
+    }
+
+    private void checkLookupKey(String key) {
+        if (!lookup.containsRow(key)) {
+            throw new IllegalArgumentException("unknown key: " + key + ". must be one of: " + lookup.rowKeySet());
+        }
+    }
+
+    public Map<Integer, String> lookup(String key) {
+        checkLookupKey(key);
+        return Collections.unmodifiableMap(lookup.row(key));
+    }
+
+    public void select(String key, Integer value) throws IllegalArgumentException {
+        checkLookupKey(key);
+        if (!lookup.contains(key, value)) {
+            throw new IllegalArgumentException(
+                    "unknown value: " + value + " for key: " + key + ". must be one of: " + lookup.row(key));
+        }
+        // remove [all] selection
+        selection.remove(key, Integer.valueOf(0));
+        selection.put(key, value);
+    }
+
+    public void select(String key, String label) throws IllegalArgumentException {
+        checkLookupKey(key);
+        boolean found = false;
+        for (Map.Entry<Integer, String> e : lookup.row(key).entrySet()) {
+            if (e.getValue().equals(label)) {
+                found = true;
+                selection.remove(key, Integer.valueOf(0));
+                selection.put(key, e.getKey());
+            }
+        }
+        if (!found) {
+            throw new IllegalArgumentException(
+                    "unknown label: " + label + " for key: " + key + ". should be one of: " + lookup.row(key).values());
+        }
+    }
+
+    public void clearSelection() {
+        selection.clear();
+    }
+
+    public HttpURLConnection download() throws IOException {
+
+        // search
+        ngisnl2("SUBSOK1");
+
+        // select all in search result
+        ngisnl2("VELGALLE");
+
+        // add to download list
+        ngisnl2("OVFNEDLL");
+
+        // download
+        HttpURLConnection conn = (HttpURLConnection) new URL(ngisnl2).openConnection();
+        conn.setDoInput(true);
+        conn.setDoOutput(true);
+        conn.setRequestMethod("POST");
+        for (Map.Entry<String, String> cookie : cookies.entrySet()) {
+            conn.setRequestProperty("Cookie", cookie.getKey() + "=" + cookie.getValue());
+        }
+        conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
+        conn.setConnectTimeout(TIMEOUT_MS);
+        conn.setReadTimeout(TIMEOUT_MS);
+
+        StringBuilder param = new StringBuilder();
+        for (Map.Entry<String, Integer> e : selection.entries()) {
+            param.append(e.getKey());
+            param.append('=');
+            param.append(e.getValue().intValue());
+            param.append('&');
+        }
+        param.append("f1action=LASTNED&FILBANE=FAKTISK");
+
+        OutputStream out = conn.getOutputStream();
+        out.write(param.toString().getBytes("UTF-8"));
+        out.flush();
+        out.close();
+
+        if (!"application/octet-stream".equals(conn.getContentType())) {
+            throw new IOException("got content type: " + conn.getContentType());
+        }
+
+        return conn;
+
+    }
+
+    public void clear() throws IOException {
+        ngisnl2("TOMNEDLL");
+        clearSelection();
+    }
+
+    private Connection.Response ngisnl2(String action) throws IOException {
+        return Jsoup.connect(ngisnl2).timeout(TIMEOUT_MS).data(toKeyVals(selection)).data("f1action", action)
+                .data("FILBANE", "FAKTISK").method(Method.POST).cookies(cookies).execute();
+    }
+
+    private List<Connection.KeyVal> toKeyVals(Multimap<String, ?> params) {
+        List<Connection.KeyVal> keyVals = new ArrayList<>();
+        for (Map.Entry<String, Integer> e : selection.entries()) {
+            keyVals.add(KeyVal.create(e.getKey(), e.getValue().toString()));
+        }
+        return Collections.unmodifiableList(keyVals);
+    }
+
+    private void addCookies(Map<String, String> cookiesToAdd) {
+        cookies.putAll(cookiesToAdd);
+    }
+
+}
