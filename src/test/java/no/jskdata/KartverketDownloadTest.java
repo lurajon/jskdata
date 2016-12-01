@@ -25,7 +25,6 @@ public class KartverketDownloadTest extends DownloaderTestCase {
                 "vbase-utm-33-fylkesinndeling")) {
             kd.dataset(datasetId);
 
-            System.out.println("XX " + datasetId);
             for (HttpURLConnection conn : kd.downloads()) {
                 assertEquals(200, conn.getResponseCode());
                 assertEquals("application/zip", conn.getContentType());
