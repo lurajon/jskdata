@@ -7,8 +7,11 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.function.Predicate;
 
 import org.jsoup.Connection;
 import org.jsoup.Connection.Method;
@@ -38,6 +41,8 @@ public class GeoNorgeDownload {
     private final Table<String, Integer, String> lookup = HashBasedTable.create();
 
     private final Multimap<String, Integer> selection = HashMultimap.create();
+    
+    private Predicate<String> fileNameFilter = (String) -> true;
 
     private final static int TIMEOUT_MS = 1000 * 60;
 
@@ -113,6 +118,10 @@ public class GeoNorgeDownload {
                     "unknown label: " + label + " for key: " + key + ". should be one of: " + lookup.row(key).values());
         }
     }
+    
+    public void setFileNameFilter(Predicate<String> fileNameFilter) {
+        this.fileNameFilter = fileNameFilter;
+    }
 
     public void clearSelection() {
         selection.clear();
@@ -123,10 +132,31 @@ public class GeoNorgeDownload {
         // search
         ngisnl2("SUBSOK1");
 
-        // select all in search result
-        ngisnl2("VELGALLE");
+        // select files matching filter
+        Set<String> selectedFileNames = new HashSet<>();
+        Connection.Response r = ngisnl2("OPENALL");
+        Document d = r.parse();
+        for (Element fileElement : d.select("input.sokres")) {
+            String name = fileElement.attr("name");
+            if (!name.startsWith("fcb_")) {
+                continue;
+            }
+            String fileName = fileElement.nextSibling().toString().trim();
+            if (!fileNameFilter.test(fileName)) {
+                continue;
+            }
+            Map<String, String> fileSelectionParams = new HashMap<>();
+            fileSelectionParams.put(name + ".x", "1");
+            fileSelectionParams.put(name + ".y", "1");
+            ngisnl2("", fileSelectionParams);
+            selectedFileNames.add(fileName);
+        }
+        
+        if (selectedFileNames.isEmpty()) {
+            return null;
+        }
 
-        // add to download list
+        // add selected to download list
         ngisnl2("OVFNEDLL");
 
         // download
@@ -169,8 +199,12 @@ public class GeoNorgeDownload {
     }
 
     private Connection.Response ngisnl2(String action) throws IOException {
+        return ngisnl2(action, Collections.emptyMap());
+    }
+
+    private Connection.Response ngisnl2(String action, Map<String, String> extraParams) throws IOException {
         return Jsoup.connect(ngisnl2).timeout(TIMEOUT_MS).data(toKeyVals(selection)).data("f1action", action)
-                .data("FILBANE", "FAKTISK").method(Method.POST).cookies(cookies).execute();
+                .data("FILBANE", "FAKTISK").data(extraParams).method(Method.POST).cookies(cookies).execute();
     }
 
     private List<Connection.KeyVal> toKeyVals(Multimap<String, ?> params) {

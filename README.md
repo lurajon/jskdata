@@ -19,6 +19,7 @@ A java downloader for http://data.kartverket.no/download/ and https://download.g
   gnd.select("datasett", "FKB-data");
   gnd.select("kommune", "Asker (0220)");
   gnd.select("format", "SOSI");
+  gnd.setFileNameFilter(fileName -> fileName.endsWith("_Ledning.zip"));
   HttpURLConnection conn = gnd.download();
   
 ```
