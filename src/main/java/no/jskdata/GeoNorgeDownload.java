@@ -5,9 +5,11 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -40,7 +42,7 @@ public class GeoNorgeDownload extends Downloader {
     private final Table<String, Integer, String> lookup = HashBasedTable.create();
 
     private final Multimap<String, Integer> selection = HashMultimap.create();
-    
+
     private final static int TIMEOUT_MS = 1000 * 60;
 
     public GeoNorgeDownload(String username, String password) {
@@ -113,14 +115,26 @@ public class GeoNorgeDownload extends Downloader {
                     "unknown label: " + label + " for key: " + key + ". should be one of: " + lookup.row(key).values());
         }
     }
-    
+
     @Override
     public void dataset(String dataset) throws IOException {
         select("datasett", dataset);
     }
-    
+
+    public Collection<Integer> selection(String key) throws IllegalArgumentException {
+        checkLookupKey(key);
+        Set<Integer> s = new HashSet<>(selection.get(key));
+        s.remove(Integer.valueOf(0));
+        return Collections.unmodifiableCollection(s);
+    }
+
+    public void clearSelection(String key) throws IllegalArgumentException {
+        checkLookupKey(key);
+        selection.removeAll(key);
+    }
+
     public HttpURLConnection download() throws IOException {
-        
+
         // clear previous file list
         ngisnl2("TOMNEDLL");
 
@@ -146,7 +160,7 @@ public class GeoNorgeDownload extends Downloader {
             ngisnl2("", fileSelectionParams);
             selectedFileNames.add(fileName);
         }
-        
+
         if (selectedFileNames.isEmpty()) {
             return null;
         }
@@ -188,7 +202,61 @@ public class GeoNorgeDownload extends Downloader {
 
     }
 
-    public void clear() throws IOException {
+    @Override
+    public Iterator<HttpURLConnection> downloadsIterator() {
+        Set<Integer> kommuner = new HashSet<>(selection.get("kommune"));
+
+        if (kommuner.isEmpty()) {
+            kommuner.addAll(lookup.row("kommune").keySet());
+        }
+
+        final Iterator<Integer> it = kommuner.iterator();
+        return new Iterator<HttpURLConnection>() {
+
+            private HttpURLConnection next;
+
+            private void findNext() {
+                while (it.hasNext()) {
+                    Integer kommune = it.next();
+                    
+                    // unselect and select a single one for each download
+                    clearSelection("kommune");
+                    select("kommune", kommune);
+                    
+                    try {
+                        HttpURLConnection conn = download();
+                        if (conn != null) {
+                            next = conn;
+                            return;
+                        }
+                    } catch (IOException e) {
+                        throw new IllegalStateException(e);
+                    }
+                }
+            }
+
+            @Override
+            public boolean hasNext() {
+                if (next == null) {
+                    findNext();
+                }
+                return next != null;
+            }
+
+            @Override
+            public HttpURLConnection next() {
+                if (next == null) {
+                    findNext();
+                }
+                HttpURLConnection conn = next;
+                next = null;
+                return conn;
+            }
+        };
+
+    }
+
+    public void clear() {
         selection.clear();
     }
 

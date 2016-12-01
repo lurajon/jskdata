@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -289,6 +290,49 @@ public class KartverketDownload extends Downloader {
             conn.setRequestProperty("Cookie", cookie.getKey() + "=" + cookie.getValue());
         }
         return conn;
+    }
+
+    @Override
+    public Iterator<HttpURLConnection> downloadsIterator() {
+        Iterator<String> it = urls.iterator();
+        return new Iterator<HttpURLConnection>() {
+
+            HttpURLConnection next;
+
+            private void findNext() {
+                while (it.hasNext()) {
+                    String url = it.next();
+                    try {
+                        HttpURLConnection conn = openConnection(url);
+                        if (conn != null) {
+                            next = conn;
+                            return;
+                        }
+                    } catch (IOException e) {
+                        throw new IllegalStateException(e);
+                    }
+                }
+
+            }
+
+            @Override
+            public boolean hasNext() {
+                if (next == null) {
+                    findNext();
+                }
+                return next != null;
+            }
+
+            @Override
+            public HttpURLConnection next() {
+                if (next == null) {
+                    findNext();
+                }
+                HttpURLConnection conn = next;
+                next = null;
+                return conn;
+            }
+        };
     }
 
     static String createUrl(String datasetId, String fileName) {

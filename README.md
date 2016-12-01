@@ -5,21 +5,20 @@ A java downloader for http://data.kartverket.no/download/ and https://download.g
 ## Usage
 ```
   // download from http://data.kartverket.no/download/
-  KartverketDownload kd = new KartverketDownload(username, password);
+  Downloader kd = new KartverketDownload(username, password);
   kd.login();
   kd.dataset("administrative-fylker-utm-32-fylkesinndeling");
-  for (String url : kd.urls()) {
-      HttpURLConnection conn = kd.openConnection(url);
+  for (HttpURLConnection conn : kd.downloads()) {
   }
   
   // download from https://download.geonorge.no/skdl2/
   // NB: different username/password than the public http://data.kartverket.no/download/
-  GeoNorgeDownload gnd = new GeoNorgeDownload(geonorgeUsername, geonorgePassword);
+  Downloader gnd = new GeoNorgeDownload(geonorgeUsername, geonorgePassword);
   gnd.login();
   gnd.dataset("FKB-data");
-  gnd.select("kommune", "Asker (0220)");
   gnd.setFileNameFilter(fileName -> fileName.endsWith("_Ledning.zip"));
-  HttpURLConnection conn = gnd.download();
+  for (HttpURLConnection conn : gnd.downloads()) {
+  }
   
 ```
 

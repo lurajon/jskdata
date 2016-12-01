@@ -1,6 +1,8 @@
 package no.jskdata;
 
 import java.io.IOException;
+import java.net.HttpURLConnection;
+import java.util.Iterator;
 import java.util.function.Predicate;
 import java.util.logging.Logger;
 
@@ -24,5 +26,18 @@ public abstract class Downloader {
     }
 
     public abstract void dataset(String dataset) throws IOException;
+
+    public abstract Iterator<HttpURLConnection> downloadsIterator();
+
+    public Iterable<HttpURLConnection> downloads() {
+        return new Iterable<HttpURLConnection>() {
+            @Override
+            public Iterator<HttpURLConnection> iterator() {
+                return downloadsIterator();
+            }
+        };
+    }
+    
+    public abstract void clear();
 
 }
