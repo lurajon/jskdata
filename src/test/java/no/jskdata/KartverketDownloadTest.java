@@ -1,10 +1,12 @@
 package no.jskdata;
 
 import java.io.IOException;
-import java.net.HttpURLConnection;
+import java.io.InputStream;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
+
+import com.google.common.io.ByteStreams;
 
 public class KartverketDownloadTest extends DownloaderTestCase {
 
@@ -20,35 +22,47 @@ public class KartverketDownloadTest extends DownloaderTestCase {
         Downloader kd = new KartverketDownload(username, password);
         kd.login();
 
-        Set<String> fileNames = new HashSet<>();
         for (String datasetId : Arrays.asList("administrative-fylker-utm-32-fylkesinndeling",
                 "vbase-utm-33-fylkesinndeling")) {
             kd.dataset(datasetId);
 
-            for (HttpURLConnection conn : kd.downloads()) {
-                assertEquals(200, conn.getResponseCode());
-                assertEquals("application/zip", conn.getContentType());
-                for (String fileName : fileNamesFromZip(conn.getInputStream())) {
+            Set<String> fileNames = new HashSet<>();
+            kd.download(new Receiver() {
+
+                @Override
+                public boolean shouldStop() {
+                    return fileNames.size() > 3;
+                }
+
+                @Override
+                public void receive(String fileName, InputStream in) throws IOException {
                     assertFalse(fileNames.contains(fileName));
                     fileNames.add(fileName);
+                    ByteStreams.exhaust(in);
                 }
-            }
+
+            });
             assertFalse(fileNames.isEmpty());
+
             kd.clear();
         }
 
-        kd.dataset("n50-kartdata-utm-33-kommunevis-inndeling");
+        kd.clear();
 
-        // try to download one of the files
-        int connections = 0;
-        for (HttpURLConnection conn : kd.downloads()) {
-            assertEquals(200, conn.getResponseCode());
-            connections++;
-            if (connections > 3) {
-                break;
+        Set<String> fileNames = new HashSet<>();
+        kd.setFileNameFilter(f -> f.contains("Nordland"));
+        kd.dataset("stedsnavn-ssr-sosi-utm33");
+        kd.download((fileName, in) -> {
+            assertTrue(fileName.contains("Nordland"));
+            fileNames.add(fileName);
+            try {
+                ByteStreams.exhaust(in);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
             }
-        }
-        assertTrue(connections > 0);
+        });
+        assertEquals(1, fileNames.size());
+
     }
 
     public void testCreateUrl() {

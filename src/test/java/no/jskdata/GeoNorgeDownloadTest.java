@@ -1,9 +1,11 @@
 package no.jskdata;
 
 import java.io.IOException;
-import java.net.HttpURLConnection;
+import java.io.InputStream;
 import java.util.HashSet;
 import java.util.Set;
+
+import com.google.common.io.ByteStreams;
 
 public class GeoNorgeDownloadTest extends DownloaderTestCase {
 
@@ -18,20 +20,25 @@ public class GeoNorgeDownloadTest extends DownloaderTestCase {
 
         Downloader gnd = new GeoNorgeDownload(username, password);
         gnd.login();
-        gnd.setFileNameFilter(fileName -> fileName.endsWith("_Ledning.zip"));
+        gnd.setFileNameFilter(f -> f.endsWith("_Ledning.zip"));
         gnd.dataset("FKB-data");
         Set<String> fileNames = new HashSet<>();
-        for (HttpURLConnection conn : gnd.downloads()) {
-            assertEquals(200, conn.getResponseCode());
-            assertEquals("application/octet-stream", conn.getHeaderField("Content-Type"));
-            for (String fileName : fileNamesFromZip(conn.getInputStream())) {
+        gnd.download(new Receiver() {
+
+            @Override
+            public boolean shouldStop() {
+                return fileNames.size() > 10;
+            }
+
+            @Override
+            public void receive(String fileName, InputStream in) throws IOException {
                 assertFalse(fileNames.contains(fileName));
+                assertTrue(fileName.endsWith("_Ledning.zip"));
                 fileNames.add(fileName);
+                ByteStreams.exhaust(in);
             }
-            if (fileNames.size() > 3) {
-                break;
-            }
-        }
+
+        });
         assertFalse(fileNames.isEmpty());
 
         // clear download list and selection

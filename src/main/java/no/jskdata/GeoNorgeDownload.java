@@ -9,10 +9,11 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 
 import org.jsoup.Connection;
 import org.jsoup.Connection.Method;
@@ -203,57 +204,41 @@ public class GeoNorgeDownload extends Downloader {
     }
 
     @Override
-    public Iterator<HttpURLConnection> downloadsIterator() {
+    public void download(Receiver receiver) throws IOException {
         Set<Integer> kommuner = new HashSet<>(selection.get("kommune"));
+        kommuner.remove(Integer.valueOf(0));
 
         if (kommuner.isEmpty()) {
             kommuner.addAll(lookup.row("kommune").keySet());
+            kommuner.remove(Integer.valueOf(0));
         }
 
-        final Iterator<Integer> it = kommuner.iterator();
-        return new Iterator<HttpURLConnection>() {
-
-            private HttpURLConnection next;
-
-            private void findNext() {
-                while (it.hasNext()) {
-                    Integer kommune = it.next();
-                    
-                    // unselect and select a single one for each download
-                    clearSelection("kommune");
-                    select("kommune", kommune);
-                    
-                    try {
-                        HttpURLConnection conn = download();
-                        if (conn != null) {
-                            next = conn;
-                            return;
-                        }
-                    } catch (IOException e) {
-                        throw new IllegalStateException(e);
-                    }
-                }
+        for (Integer kommune : kommuner) {
+            if (receiver.shouldStop()) {
+                break;
             }
 
-            @Override
-            public boolean hasNext() {
-                if (next == null) {
-                    findNext();
-                }
-                return next != null;
+            // unselect and select a single one for each download
+            clearSelection("kommune");
+            select("kommune", kommune);
+
+            HttpURLConnection conn = download();
+            if (conn == null) {
+                continue;
             }
 
-            @Override
-            public HttpURLConnection next() {
-                if (next == null) {
-                    findNext();
+            ZipInputStream zis = new ZipInputStream(conn.getInputStream());
+            ZipEntry entry = null;
+            while ((entry = zis.getNextEntry()) != null) {
+                if (receiver.shouldStop()) {
+                    break;
                 }
-                HttpURLConnection conn = next;
-                next = null;
-                return conn;
+                String path = entry.getName();
+                String fileName = path.substring(path.lastIndexOf('\\') + 1);
+                receiver.receive(fileName, zis);
             }
-        };
 
+        }
     }
 
     public void clear() {

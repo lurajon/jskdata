@@ -1,8 +1,8 @@
 package no.jskdata;
 
 import java.io.IOException;
-import java.net.HttpURLConnection;
-import java.util.Iterator;
+import java.io.InputStream;
+import java.util.function.BiConsumer;
 import java.util.function.Predicate;
 import java.util.logging.Logger;
 
@@ -27,17 +27,24 @@ public abstract class Downloader {
 
     public abstract void dataset(String dataset) throws IOException;
 
-    public abstract Iterator<HttpURLConnection> downloadsIterator();
+    public abstract void download(Receiver receiver) throws IOException;
 
-    public Iterable<HttpURLConnection> downloads() {
-        return new Iterable<HttpURLConnection>() {
+    public void download(BiConsumer<String, InputStream> receiver) throws IOException {
+        download(new Receiver() {
+
             @Override
-            public Iterator<HttpURLConnection> iterator() {
-                return downloadsIterator();
+            public boolean shouldStop() {
+                return false;
             }
-        };
+
+            @Override
+            public void receive(String fileName, InputStream in) throws IOException {
+                receiver.accept(fileName, in);
+            }
+
+        });
     }
-    
+
     public abstract void clear();
 
 }

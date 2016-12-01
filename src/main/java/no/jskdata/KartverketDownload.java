@@ -10,7 +10,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -293,46 +292,15 @@ public class KartverketDownload extends Downloader {
     }
 
     @Override
-    public Iterator<HttpURLConnection> downloadsIterator() {
-        Iterator<String> it = urls.iterator();
-        return new Iterator<HttpURLConnection>() {
-
-            HttpURLConnection next;
-
-            private void findNext() {
-                while (it.hasNext()) {
-                    String url = it.next();
-                    try {
-                        HttpURLConnection conn = openConnection(url);
-                        if (conn != null) {
-                            next = conn;
-                            return;
-                        }
-                    } catch (IOException e) {
-                        throw new IllegalStateException(e);
-                    }
-                }
-
+    public void download(Receiver receiver) throws IOException {
+        for (String url : urls()) {
+            if (receiver.shouldStop()) {
+                break;
             }
-
-            @Override
-            public boolean hasNext() {
-                if (next == null) {
-                    findNext();
-                }
-                return next != null;
-            }
-
-            @Override
-            public HttpURLConnection next() {
-                if (next == null) {
-                    findNext();
-                }
-                HttpURLConnection conn = next;
-                next = null;
-                return conn;
-            }
-        };
+            String fileName = url.substring(url.lastIndexOf('/') + 1);
+            HttpURLConnection conn = openConnection(url);
+            receiver.receive(fileName, conn.getInputStream());
+        }
     }
 
     static String createUrl(String datasetId, String fileName) {

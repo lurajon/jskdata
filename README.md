@@ -8,17 +8,17 @@ A java downloader for http://data.kartverket.no/download/ and https://download.g
   Downloader kd = new KartverketDownload(username, password);
   kd.login();
   kd.dataset("administrative-fylker-utm-32-fylkesinndeling");
-  for (HttpURLConnection conn : kd.downloads()) {
-  }
+  kd.download((fileName, in) -> { # or implement Receiver
+  });
   
   // download from https://download.geonorge.no/skdl2/
   // NB: different username/password than the public http://data.kartverket.no/download/
   Downloader gnd = new GeoNorgeDownload(geonorgeUsername, geonorgePassword);
   gnd.login();
+  gnd.setFileNameFilter(n -> n.endsWith("_Ledning.zip"));
   gnd.dataset("FKB-data");
-  gnd.setFileNameFilter(fileName -> fileName.endsWith("_Ledning.zip"));
-  for (HttpURLConnection conn : gnd.downloads()) {
-  }
+  gnd.download((fileName, in) -> { # or implement Receiver
+  });
   
 ```
 
