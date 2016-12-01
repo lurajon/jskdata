@@ -31,9 +31,8 @@ public class GeoNorgeDownloadTest extends TestCase {
         gnd.login();
 
         // select some known values
-        gnd.select("datasett", "FKB-data");
+        gnd.dataset("FKB-data");
         gnd.select("kommune", "Asker (0220)");
-        gnd.select("format", "SOSI");
 
         // set file name filter
         gnd.setFileNameFilter(fileName -> fileName.endsWith("_Ledning.zip"));

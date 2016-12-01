@@ -16,9 +16,8 @@ A java downloader for http://data.kartverket.no/download/ and https://download.g
   // NB: different username/password than the public http://data.kartverket.no/download/
   GeoNorgeDownload gnd = new GeoNorgeDownload(geonorgeUsername, geonorgePassword);
   gnd.login();
-  gnd.select("datasett", "FKB-data");
+  gnd.dataset("FKB-data");
   gnd.select("kommune", "Asker (0220)");
-  gnd.select("format", "SOSI");
   gnd.setFileNameFilter(fileName -> fileName.endsWith("_Ledning.zip"));
   HttpURLConnection conn = gnd.download();
   

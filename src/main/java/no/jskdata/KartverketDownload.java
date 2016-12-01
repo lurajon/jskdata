@@ -6,12 +6,14 @@ import java.io.InputStreamReader;
 import java.io.StringReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.logging.Level;
 
 import org.jsoup.Connection;
 import org.jsoup.Connection.Method;
@@ -19,17 +21,20 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 
+import com.google.common.collect.Lists;
 import com.google.gson.Gson;
 
 /**
  * A way to access http://data.kartverket.no/download/ from java
  */
-public class KartverketDownload {
+public class KartverketDownload extends Downloader {
 
     private final String username;
     private final String password;
 
     private Map<String, String> cookies;
+
+    private final Set<String> restFileNames = new HashSet<>();
 
     private final Set<String> urls = new HashSet<>();
 
@@ -37,8 +42,11 @@ public class KartverketDownload {
 
     private final Gson gson = new Gson();
 
-    // the big jobs are slow..
+    // the big jobs are slow and 30s is the same as server php timeout.. for big
+    // downloads, this is not enough
     private static final int TIMEOUT_MILLIS = 1000 * 30;
+
+    private static final int MAX_CHART_SIZE = 50;
 
     private static final Map<String, String> jsonUrlByServiceName;
 
@@ -148,14 +156,95 @@ public class KartverketDownload {
             filename = filename.replace('å', 'a');
             filename = filename.replace('Å', 'A');
 
-            // find url
-            String url = createUrl(datasetId, filename);
-            if (url == null) {
-                throw new IOException("do not know url prefix for dataset id: " + datasetId);
+            if (!fileNameFilter.test(filename)) {
+                continue;
             }
-            urls.add(url);
+
+            restFileNames.add(filename);
         }
 
+        // check the download list for previous downloads that are still valid
+        downloadList();
+
+        // use the basket for the rest. hopefully no need for this as of
+        // createUrl step above
+        for (List<String> someFileNames : Lists.partition(new ArrayList<>(restFileNames), MAX_CHART_SIZE)) {
+
+            // click add to chart
+            Element addToChartForm = d.select("form").get(0);
+            String addToChartUrl = baseUrl + addToChartForm.attr("action");
+            Map<String, String> formParameters = new HashMap<>();
+            formParameters.putAll(formInputParameters(addToChartForm));
+            formParameters.put("line_item_fields[field_selection][und][0][value]", gson.toJson(someFileNames));
+            formParameters.put("line_item_fields[field_selection_text][und][0][value]",
+                    someFileNames.size() + " filer");
+            Connection.Response res2 = Jsoup.connect(addToChartUrl).timeout(TIMEOUT_MILLIS).cookies(cookies)
+                    .method(Method.POST).data(formParameters).execute();
+            if (!res2.body().contains("ble lagt i")) {
+                throw new IOException("not in chart");
+            }
+
+            // click checkout
+            Connection.Response checkoutResult = Jsoup.connect(baseUrl + "/download/checkout").cookies(cookies)
+                    .execute();
+            Document checkoutDocument = checkoutResult.parse();
+
+            // click continue
+            Element continueForm = checkoutDocument.select("form").get(0);
+            String continueUrl = baseUrl + continueForm.attr("action");
+            Map<String, String> continueParameters = new HashMap<>();
+            continueParameters.putAll(formInputParameters(continueForm));
+            continueParameters.put("op", "Fortsett");
+            Jsoup.connect(continueUrl).timeout(TIMEOUT_MILLIS).cookies(cookies).data(continueParameters)
+                    .method(Method.POST).execute();
+
+            // try to figure out url without going to checkout list
+            for (String fileName : someFileNames) {
+                String url = createUrl(datasetId, fileName);
+                if (url != null) {
+                    restFileNames.remove(fileName);
+                    urls.add(url);
+                }
+            }
+
+        }
+
+        // get the rest of the urls
+        downloadList();
+
+        // check that we got all files
+        if (!restFileNames.isEmpty()) {
+            throw new IOException("did not find urls for " + restFileNames);
+        }
+
+    }
+
+    private void downloadList() throws IOException {
+
+        if (restFileNames.isEmpty()) {
+            return;
+        }
+
+        try {
+
+            Connection.Response downloadResult = Jsoup.connect(baseUrl + "/download/mine/downloads")
+                    .timeout(TIMEOUT_MILLIS).cookies(cookies).execute();
+            Document downloadDocument = downloadResult.parse();
+            for (Element a : downloadDocument.select("a[href]")) {
+                String url = a.attr("href");
+                if (!url.startsWith("http")) {
+                    continue;
+                }
+                String filename = url.substring(url.lastIndexOf('/') + 1);
+                if (!restFileNames.remove(filename)) {
+                    continue;
+                }
+                urls.add(url);
+            }
+
+        } catch (IOException e) {
+            getLogger().log(Level.INFO, "ignoring download list exception", e);
+        }
     }
 
     private Map<String, String> formInputParameters(Element form) {
@@ -190,6 +279,7 @@ public class KartverketDownload {
     }
 
     public void clear() {
+        restFileNames.clear();
         urls.clear();
     }
 

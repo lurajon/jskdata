@@ -11,7 +11,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Predicate;
 
 import org.jsoup.Connection;
 import org.jsoup.Connection.Method;
@@ -28,7 +27,7 @@ import com.google.common.collect.Table;
 /**
  * A way to access https://download.geonorge.no/skdl2/ from java
  */
-public class GeoNorgeDownload {
+public class GeoNorgeDownload extends Downloader {
 
     private final String username;
     private final String password;
@@ -42,8 +41,6 @@ public class GeoNorgeDownload {
 
     private final Multimap<String, Integer> selection = HashMultimap.create();
     
-    private Predicate<String> fileNameFilter = (String) -> true;
-
     private final static int TIMEOUT_MS = 1000 * 60;
 
     public GeoNorgeDownload(String username, String password) {
@@ -117,10 +114,11 @@ public class GeoNorgeDownload {
         }
     }
     
-    public void setFileNameFilter(Predicate<String> fileNameFilter) {
-        this.fileNameFilter = fileNameFilter;
+    @Override
+    public void dataset(String dataset) throws IOException {
+        select("datasett", dataset);
     }
-
+    
     public HttpURLConnection download() throws IOException {
         
         // clear previous file list
