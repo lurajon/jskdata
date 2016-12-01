@@ -34,7 +34,7 @@ public class GeoNorgeDownloadTest extends TestCase {
         gnd.select("datasett", "FKB-data");
         gnd.select("kommune", "Asker (0220)");
         gnd.select("format", "SOSI");
-        
+
         // set file name filter
         gnd.setFileNameFilter(fileName -> fileName.endsWith("_Ledning.zip"));
 
@@ -47,7 +47,7 @@ public class GeoNorgeDownloadTest extends TestCase {
         Set<String> fileNames = new HashSet<>();
         ZipInputStream zis = new ZipInputStream(conn.getInputStream());
         ZipEntry e = null;
-        while((e = zis.getNextEntry())!=null) {
+        while ((e = zis.getNextEntry()) != null) {
             fileNames.add(e.getName());
             assertTrue(e.getName(), e.getName().endsWith("_Ledning.zip"));
         }

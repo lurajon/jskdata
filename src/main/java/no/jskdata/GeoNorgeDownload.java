@@ -77,8 +77,6 @@ public class GeoNorgeDownload {
         if (lookup.isEmpty()) {
             throw new IOException("could not download lookup tables");
         }
-
-        clearSelection();
     }
 
     private void checkLookupKey(String key) {
@@ -123,11 +121,10 @@ public class GeoNorgeDownload {
         this.fileNameFilter = fileNameFilter;
     }
 
-    public void clearSelection() {
-        selection.clear();
-    }
-
     public HttpURLConnection download() throws IOException {
+        
+        // clear previous file list
+        ngisnl2("TOMNEDLL");
 
         // search
         ngisnl2("SUBSOK1");
@@ -194,8 +191,7 @@ public class GeoNorgeDownload {
     }
 
     public void clear() throws IOException {
-        ngisnl2("TOMNEDLL");
-        clearSelection();
+        selection.clear();
     }
 
     private Connection.Response ngisnl2(String action) throws IOException {
