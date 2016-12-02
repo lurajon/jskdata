@@ -98,7 +98,10 @@ public class KartverketDownload extends Downloader {
         Connection.Response r = Jsoup.connect(baseUrl + "/download/content/" + datasetId).cookies(cookies).execute();
         Document d = r.parse();
 
-        String line = firstLineWithMatch(d.data(), "kms_widget");
+        String line = firstLineWithMatch(d.data(), "kms_widget", "service_name");
+        if (line == null) {
+            throw new IOException("could not find kms_widget with service_name");
+        }
         String json = line.substring(line.indexOf('{'), line.lastIndexOf('}') + 1);
 
         @SuppressWarnings("unchecked")
@@ -107,46 +110,52 @@ public class KartverketDownload extends Downloader {
         Map<String, String> conf = (Map<String, String>) m.get("kms_widget");
 
         String serviceName = conf.get("service_name");
-        String jsonUrl = jsonUrlByServiceName.get(serviceName);
-        if (jsonUrl == null) {
-            throw new IOException("unknown service name: " + serviceName);
-        }
+        boolean isSingleFile = serviceName == null;
 
-        HttpURLConnection conn = (HttpURLConnection) new URL(jsonUrl).openConnection();
-        FeatureCollection featureCollection = gson.fromJson(new InputStreamReader(conn.getInputStream()),
-                FeatureCollection.class);
-        for (Feature feature : featureCollection.features) {
-
-            // norgeskart-xdm.js ported to java
-            String name = feature.get("n");
-            String filename;
-            if (feature.id == null) {
-                filename = name + conf.get("selection_details");
-            } else if (feature.get("f") != null) {
-                filename = feature.get("f") + conf.get("selection_details");
-            } else {
-                filename = feature.id + "_" + name + conf.get("selection_details");
-            }
-
-            if ("MrSID".equals(conf.get("dataformat"))) {
-                filename = conf.get("service_layer") + "_" + filename.replace(' ', '_') + '_' + conf.get("dataformat")
-                        + ".sid";
-            } else {
-                filename = conf.get("service_layer") + "_" + filename.replace(' ', '_') + '_' + conf.get("dataformat")
-                        + ".zip";
-            }
-            filename = filename.replace('æ', 'e');
-            filename = filename.replace('Æ', 'E');
-            filename = filename.replace('ø', 'o');
-            filename = filename.replace('Ø', 'O');
-            filename = filename.replace('å', 'a');
-            filename = filename.replace('Å', 'A');
-
+        if (isSingleFile) {
+            String filename = conf.get("selection_details");
             if (!fileNameFilter.test(filename)) {
-                continue;
+                return;
+            }
+            restFileNames.add(filename);
+        } else {
+            String jsonUrl = jsonUrlByServiceName.get(serviceName);
+            if (jsonUrl == null) {
+                throw new IOException("unknown service name: " + serviceName + " for dataset: " + datasetId);
             }
 
-            restFileNames.add(filename);
+            HttpURLConnection conn = (HttpURLConnection) new URL(jsonUrl).openConnection();
+            FeatureCollection featureCollection = gson.fromJson(new InputStreamReader(conn.getInputStream()),
+                    FeatureCollection.class);
+            for (Feature feature : featureCollection.features) {
+
+                // norgeskart-xdm.js ported to java
+                String name = feature.get("n");
+                String filename;
+                if (feature.id == null) {
+                    filename = name + conf.get("selection_details");
+                } else if (feature.get("f") != null) {
+                    filename = feature.get("f") + conf.get("selection_details");
+                } else {
+                    filename = feature.id + "_" + name + conf.get("selection_details");
+                }
+
+                filename = conf.get("service_layer") + "_" + filename.replace(' ', '_') + '_' + conf.get("dataformat");
+                filename = filename + ("MrSID".equals(conf.get("dataformat")) ? ".sid" : ".zip");
+
+                filename = filename.replace('æ', 'e');
+                filename = filename.replace('Æ', 'E');
+                filename = filename.replace('ø', 'o');
+                filename = filename.replace('Ø', 'O');
+                filename = filename.replace('å', 'a');
+                filename = filename.replace('Å', 'A');
+
+                if (!fileNameFilter.test(filename)) {
+                    continue;
+                }
+
+                restFileNames.add(filename);
+            }
         }
 
         // check the download list for previous downloads that are still valid
@@ -163,7 +172,7 @@ public class KartverketDownload extends Downloader {
             formParameters.putAll(formInputParameters(addToChartForm));
             formParameters.put("line_item_fields[field_selection][und][0][value]", gson.toJson(someFileNames));
             formParameters.put("line_item_fields[field_selection_text][und][0][value]",
-                    someFileNames.size() + " filer");
+                    isSingleFile ? "1 samlet fil" : someFileNames.size() + " filer");
             Connection.Response res2 = Jsoup.connect(addToChartUrl).timeout(TIMEOUT_MILLIS).cookies(cookies)
                     .method(Method.POST).data(formParameters).execute();
             if (!res2.body().contains("ble lagt i")) {
@@ -241,12 +250,20 @@ public class KartverketDownload extends Downloader {
         return Collections.unmodifiableMap(parameters);
     }
 
-    private String firstLineWithMatch(String lines, String match) {
+    private String firstLineWithMatch(String lines, String... match) {
         try {
             BufferedReader reader = new BufferedReader(new StringReader(lines));
             String line = null;
             while ((line = reader.readLine()) != null) {
-                if (line.indexOf(match) >= 0) {
+                boolean allMatch = true;
+                ;
+                for (String m : match) {
+                    if (line.indexOf(m) < 0) {
+                        allMatch = false;
+                        break;
+                    }
+                }
+                if (allMatch) {
                     return line;
                 }
             }
@@ -299,8 +316,13 @@ public class KartverketDownload extends Downloader {
         private Map<String, String> properties;
 
         public String get(String key) {
-            return properties == null ? null : properties.get(key);
+            return get(key, null);
         }
+
+        public String get(String key, String defaultValue) {
+            return properties == null ? defaultValue : properties.get(key);
+        }
+
     }
 
 }
