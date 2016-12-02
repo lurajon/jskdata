@@ -50,8 +50,6 @@ public class KartverketDownload extends Downloader {
 
     private static final Map<String, String> jsonUrlByServiceName;
 
-    private static final Map<String, String> urlPrefixByDatasetName;
-
     static {
         Map<String, String> sn = new HashMap<>();
         sn.put("fylker", "http://www.norgeskart.no/json/norge/fylker.json");
@@ -63,18 +61,6 @@ public class KartverketDownload extends Downloader {
         sn.put("kommuner-utm33", "http://www.norgeskart.no/json/norge/kommuner-utm33.json");
         sn.put("kommuner-utm35", "http://www.norgeskart.no/json/norge/kommuner-utm35.json");
         jsonUrlByServiceName = Collections.unmodifiableMap(sn);
-
-        Map<String, String> udn = new HashMap<>();
-        udn.put("n50-kartdata-utm-33-kommunevis-inndeling",
-                "http://data.kartverket.no/download/system/files/kartdata/n50/kommuner/");
-        for (int utm : new int[] { 32, 33, 35 }) {
-            udn.put("administrative-fylker-utm-" + utm + "-fylkesinndeling",
-                    "http://data.kartverket.no/download/system/files/grensedata/fylker/");
-            udn.put("vbase-utm-" + utm, "http://data.kartverket.no/download/system/files/vegdata/vbase/kommuner/");
-            udn.put("vbase-utm-" + utm + "-fylkesinndeling",
-                    "http://data.kartverket.no/download/system/files/vegdata/vbase/fylker/");
-        }
-        urlPrefixByDatasetName = Collections.unmodifiableMap(udn);
     }
 
     public KartverketDownload(String username, String password) {
@@ -200,7 +186,7 @@ public class KartverketDownload extends Downloader {
 
             // try to figure out url without going to checkout list
             for (String fileName : someFileNames) {
-                String url = createUrl(datasetId, fileName);
+                String url = DatasetUrl.createUrl(datasetId, fileName);
                 if (url != null) {
                     restFileNames.remove(fileName);
                     urls.add(url);
@@ -301,11 +287,6 @@ public class KartverketDownload extends Downloader {
             HttpURLConnection conn = openConnection(url);
             receiver.receive(fileName, conn.getInputStream());
         }
-    }
-
-    static String createUrl(String datasetId, String fileName) {
-        String urlPrefix = urlPrefixByDatasetName.get(datasetId);
-        return urlPrefix == null ? null : urlPrefix + fileName;
     }
 
     private static class FeatureCollection {
