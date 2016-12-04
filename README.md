@@ -2,6 +2,21 @@
 
 A java downloader for http://data.kartverket.no/download/ and https://download.geonorge.no/skdl2/
 
+# Maven
+
+```
+<repository>
+    <id>ECC</id>
+    <url>https://github.com/ElectronicChartCentre/ecc-mvn-repo/raw/master/releases</url>
+</repository>
+
+<dependency>
+    <groupId>no.jskdata</groupId>
+    <artifactId>jskdata</artifactId>
+    <version>1.0.1</version>
+</dependency>
+````
+
 ## Usage
 ```
   // download from http://data.kartverket.no/download/
