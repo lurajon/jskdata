@@ -2,7 +2,7 @@
 
 A java downloader for http://data.kartverket.no/download/ and https://download.geonorge.no/skdl2/
 
-# Maven
+## Maven
 
 ```
 <repository>
