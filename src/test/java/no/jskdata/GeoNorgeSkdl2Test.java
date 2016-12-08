@@ -7,7 +7,7 @@ import java.util.Set;
 
 import com.google.common.io.ByteStreams;
 
-public class GeoNorgeDownloadTest extends DownloaderTestCase {
+public class GeoNorgeSkdl2Test extends DownloaderTestCase {
 
     private static final String USERNAME_KEY = "geonorge.username";
 
@@ -18,7 +18,7 @@ public class GeoNorgeDownloadTest extends DownloaderTestCase {
         String username = getProperty(USERNAME_KEY);
         String password = getProperty(PASSWORD_KEY);
 
-        Downloader gnd = new GeoNorgeDownload(username, password);
+        Downloader gnd = new GeoNorgeSkdl2(username, password);
         gnd.login();
         gnd.setFileNameFilter(f -> f.endsWith("_Ledning.zip"));
         gnd.dataset("FKB-data");

@@ -30,7 +30,7 @@ import com.google.common.collect.Table;
 /**
  * A way to access https://download.geonorge.no/skdl2/ from java
  */
-public class GeoNorgeDownload extends Downloader {
+public class GeoNorgeSkdl2 extends Downloader {
 
     private final String username;
     private final String password;
@@ -46,7 +46,7 @@ public class GeoNorgeDownload extends Downloader {
 
     private final static int TIMEOUT_MS = 1000 * 60;
 
-    public GeoNorgeDownload(String username, String password) {
+    public GeoNorgeSkdl2(String username, String password) {
         this.username = username;
         this.password = password;
     }

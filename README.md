@@ -28,10 +28,17 @@ A java downloader for http://data.kartverket.no/download/ and https://download.g
   
   // download from https://download.geonorge.no/skdl2/
   // NB: different username/password than the public http://data.kartverket.no/download/
-  Downloader gnd = new GeoNorgeDownload(geonorgeUsername, geonorgePassword);
+  Downloader gnd = new GeoNorgeSkdl2(geonorgeUsername, geonorgePassword);
   gnd.login();
   gnd.setFileNameFilter(n -> n.endsWith("_Ledning.zip"));
   gnd.dataset("FKB-data");
+  gnd.download((fileName, in) -> { # or implement Receiver
+  });
+  
+  // download using GeoNorge "NedlastingsAPI"
+  Downloader downloader = new GeoNorgeDownloadAPI();
+  downloader.setFileNameFilter(n -> n.contains("SOSI"));
+  downloader.dataset("28c896d0-8a0d-4209-bf31-4931033b1082");
   gnd.download((fileName, in) -> { # or implement Receiver
   });
   

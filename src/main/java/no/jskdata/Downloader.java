@@ -64,9 +64,11 @@ public abstract class Downloader {
         } else if (hasUserAndPass && "data.kartverket.no".equals(type)) {
             dl = new KartverketDownload(username, password);
             dl.login();
-        } else if (hasUserAndPass && type.equalsIgnoreCase("GeoNorge")) {
-            dl = new GeoNorgeDownload(username, password);
+        } else if (hasUserAndPass && type.equals("GeoNorgeSkdl2")) {
+            dl = new GeoNorgeSkdl2(username, password);
             dl.login();
+        } else if (type.equals("GeoNorgeDownloadAPI")) {
+            dl = new GeoNorgeDownloadAPI();
         }
 
         String dataset = options.get("dataset");
