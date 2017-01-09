@@ -13,7 +13,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.logging.Level;
 
 import org.jsoup.Connection;
 import org.jsoup.Connection.Method;
@@ -158,8 +157,21 @@ public class KartverketDownload extends Downloader {
             }
         }
 
-        // check the download list for previous downloads that are still valid
-        downloadList();
+        // check if some files can be downloaded without ordering. typically
+        // when already ordered.
+        for (String fileName : new ArrayList<>(restFileNames)) {
+            String url = DatasetUrl.createUrl(datasetId, fileName);
+            if (url == null) {
+                continue;
+            }
+            HttpURLConnection conn = openConnection(url);
+            conn.setRequestMethod("HEAD");
+            // give 403 if not ordered. 200 if ordered.
+            if (conn.getResponseCode() == 200) {
+                urls.add(url);
+                restFileNames.remove(fileName);
+            }
+        }
 
         // use the basket for the rest. hopefully no need for this as of
         // createUrl step above
@@ -199,47 +211,19 @@ public class KartverketDownload extends Downloader {
                 if (url != null) {
                     restFileNames.remove(fileName);
                     urls.add(url);
+                } else {
+                    getLogger().info("could not find url without going to checkout list for datasetId: " + datasetId
+                            + ". fileName: " + fileName);
                 }
             }
 
         }
-
-        // get the rest of the urls
-        downloadList();
 
         // check that we got all files
         if (!restFileNames.isEmpty()) {
             throw new IOException("did not find urls for " + restFileNames);
         }
 
-    }
-
-    private void downloadList() throws IOException {
-
-        if (restFileNames.isEmpty()) {
-            return;
-        }
-
-        try {
-
-            Connection.Response downloadResult = Jsoup.connect(baseUrl + "/download/mine/downloads")
-                    .timeout(TIMEOUT_MILLIS).cookies(cookies).execute();
-            Document downloadDocument = downloadResult.parse();
-            for (Element a : downloadDocument.select("a[href]")) {
-                String url = a.attr("href");
-                if (!url.startsWith("http")) {
-                    continue;
-                }
-                String filename = url.substring(url.lastIndexOf('/') + 1);
-                if (!restFileNames.remove(filename)) {
-                    continue;
-                }
-                urls.add(url);
-            }
-
-        } catch (IOException e) {
-            getLogger().log(Level.INFO, "ignoring download list exception", e);
-        }
     }
 
     private Map<String, String> formInputParameters(Element form) {
@@ -277,7 +261,7 @@ public class KartverketDownload extends Downloader {
         return cookies != null && !cookies.isEmpty();
     }
 
-    public Set<String> urls() {
+    private Set<String> urls() {
         return Collections.unmodifiableSet(urls);
     }
 
@@ -286,12 +270,35 @@ public class KartverketDownload extends Downloader {
         urls.clear();
     }
 
-    public HttpURLConnection openConnection(String url) throws IOException {
+    private HttpURLConnection openConnection(String url) throws IOException {
         HttpURLConnection conn = (HttpURLConnection) new URL(url).openConnection();
         for (Map.Entry<String, String> cookie : cookies.entrySet()) {
             conn.setRequestProperty("Cookie", cookie.getKey() + "=" + cookie.getValue());
         }
         return conn;
+    }
+
+    private HttpURLConnection openConnectionWithRetry(String url) throws IOException {
+        IOException lastException = null;
+        int lastStatus = -1;
+        for (int i = 0; i < 10; i++) {
+            try {
+                lastException = null;
+                HttpURLConnection conn = openConnection(url);
+                lastStatus = conn.getResponseCode();
+                if (lastStatus == 200) {
+                    return conn;
+                }
+                Thread.sleep(200 * i);
+            } catch (IOException e) {
+                lastException = e;
+            } catch (InterruptedException e) {
+            }
+        }
+        if (lastException != null) {
+            throw lastException;
+        }
+        throw new IOException("url " + url + " returned status code " + lastStatus);
     }
 
     @Override
@@ -301,7 +308,7 @@ public class KartverketDownload extends Downloader {
                 break;
             }
             String fileName = url.substring(url.lastIndexOf('/') + 1);
-            HttpURLConnection conn = openConnection(url);
+            HttpURLConnection conn = openConnectionWithRetry(url);
             receiver.receive(fileName, conn.getInputStream());
         }
     }
