@@ -33,9 +33,7 @@ public class KartverketDownload extends Downloader {
 
     private Map<String, String> cookies;
 
-    private final Set<String> restFileNames = new HashSet<>();
-
-    private final Set<String> urls = new HashSet<>();
+    private final Set<String> datasetIds = new HashSet<>();
 
     private final String baseUrl = "http://data.kartverket.no";
 
@@ -94,136 +92,7 @@ public class KartverketDownload extends Downloader {
     }
 
     public void dataset(String datasetId) throws IOException {
-        Connection.Response r = Jsoup.connect(baseUrl + "/download/content/" + datasetId).cookies(cookies).execute();
-        Document d = r.parse();
-
-        String line = firstLineWithMatch(d.data(), "kms_widget", "service_name");
-        if (line == null) {
-            throw new IOException("could not find kms_widget with service_name");
-        }
-        String json = line.substring(line.indexOf('{'), line.lastIndexOf('}') + 1);
-
-        @SuppressWarnings("unchecked")
-        Map<String, Object> m = gson.fromJson(json, Map.class);
-        @SuppressWarnings("unchecked")
-        Map<String, String> conf = (Map<String, String>) m.get("kms_widget");
-
-        String serviceName = conf.get("service_name");
-        boolean isSingleFile = serviceName == null;
-
-        if (isSingleFile) {
-            String filename = conf.get("selection_details");
-            if (!fileNameFilter.test(filename)) {
-                return;
-            }
-            restFileNames.add(filename);
-        } else {
-            String jsonUrl = jsonUrlByServiceName.get(serviceName);
-            if (jsonUrl == null) {
-                throw new IOException("unknown service name: " + serviceName + " for dataset: " + datasetId);
-            }
-
-            HttpURLConnection conn = (HttpURLConnection) new URL(jsonUrl).openConnection();
-            FeatureCollection featureCollection = gson.fromJson(new InputStreamReader(conn.getInputStream()),
-                    FeatureCollection.class);
-            for (Feature feature : featureCollection.features) {
-
-                // norgeskart-xdm.js ported to java
-                String name = feature.get("n");
-                String filename;
-                if (feature.id == null) {
-                    filename = name + conf.get("selection_details");
-                } else if (feature.get("f") != null) {
-                    filename = feature.get("f") + conf.get("selection_details");
-                } else {
-                    filename = feature.id + "_" + name + conf.get("selection_details");
-                }
-
-                filename = conf.get("service_layer") + "_" + filename.replace(' ', '_') + '_' + conf.get("dataformat");
-                filename = filename + ("MrSID".equals(conf.get("dataformat")) ? ".sid" : ".zip");
-
-                filename = filename.replace('æ', 'e');
-                filename = filename.replace('Æ', 'E');
-                filename = filename.replace('ø', 'o');
-                filename = filename.replace('Ø', 'O');
-                filename = filename.replace('å', 'a');
-                filename = filename.replace('Å', 'A');
-
-                if (!fileNameFilter.test(filename)) {
-                    continue;
-                }
-
-                restFileNames.add(filename);
-            }
-        }
-
-        // check if some files can be downloaded without ordering. typically
-        // when already ordered.
-        for (String fileName : new ArrayList<>(restFileNames)) {
-            String url = DatasetUrl.createUrl(datasetId, fileName);
-            if (url == null) {
-                continue;
-            }
-            HttpURLConnection conn = openConnection(url);
-            conn.setRequestMethod("HEAD");
-            // give 403 if not ordered. 200 if ordered.
-            if (conn.getResponseCode() == 200) {
-                urls.add(url);
-                restFileNames.remove(fileName);
-            }
-        }
-
-        // use the basket for the rest. hopefully no need for this as of
-        // createUrl step above
-        for (List<String> someFileNames : Lists.partition(new ArrayList<>(restFileNames), MAX_CHART_SIZE)) {
-
-            // click add to chart
-            Element addToChartForm = d.select("form").get(0);
-            String addToChartUrl = baseUrl + addToChartForm.attr("action");
-            Map<String, String> formParameters = new HashMap<>();
-            formParameters.putAll(formInputParameters(addToChartForm));
-            formParameters.put("line_item_fields[field_selection][und][0][value]", gson.toJson(someFileNames));
-            formParameters.put("line_item_fields[field_selection_text][und][0][value]",
-                    isSingleFile ? "1 samlet fil" : someFileNames.size() + " filer");
-            Connection.Response res2 = Jsoup.connect(addToChartUrl).timeout(TIMEOUT_MILLIS).cookies(cookies)
-                    .method(Method.POST).data(formParameters).execute();
-            if (!res2.body().contains("ble lagt i")) {
-                throw new IOException("not in chart");
-            }
-
-            // click checkout
-            Connection.Response checkoutResult = Jsoup.connect(baseUrl + "/download/checkout").cookies(cookies)
-                    .execute();
-            Document checkoutDocument = checkoutResult.parse();
-
-            // click continue
-            Element continueForm = checkoutDocument.select("form").get(0);
-            String continueUrl = baseUrl + continueForm.attr("action");
-            Map<String, String> continueParameters = new HashMap<>();
-            continueParameters.putAll(formInputParameters(continueForm));
-            continueParameters.put("op", "Fortsett");
-            Jsoup.connect(continueUrl).timeout(TIMEOUT_MILLIS).cookies(cookies).data(continueParameters)
-                    .method(Method.POST).execute();
-
-            // try to figure out url without going to checkout list
-            for (String fileName : someFileNames) {
-                String url = DatasetUrl.createUrl(datasetId, fileName);
-                if (url != null) {
-                    restFileNames.remove(fileName);
-                    urls.add(url);
-                } else {
-                    getLogger().info("could not find url without going to checkout list for datasetId: " + datasetId
-                            + ". fileName: " + fileName);
-                }
-            }
-
-        }
-
-        // check that we got all files
-        if (!restFileNames.isEmpty()) {
-            throw new IOException("did not find urls for " + restFileNames);
-        }
-
+        datasetIds.add(datasetId);
     }
 
     private Map<String, String> formInputParameters(Element form) {
@@ -261,13 +130,8 @@ public class KartverketDownload extends Downloader {
         return cookies != null && !cookies.isEmpty();
     }
 
-    private Set<String> urls() {
-        return Collections.unmodifiableSet(urls);
-    }
-
     public void clear() {
-        restFileNames.clear();
-        urls.clear();
+        datasetIds.clear();
     }
 
     private HttpURLConnection openConnection(String url) throws IOException {
@@ -303,13 +167,145 @@ public class KartverketDownload extends Downloader {
 
     @Override
     public void download(Receiver receiver) throws IOException {
-        for (String url : urls()) {
-            if (receiver.shouldStop()) {
-                break;
+
+        for (String datasetId : datasetIds) {
+
+            Set<String> restFileNames = new HashSet<>();
+
+            Connection.Response r = Jsoup.connect(baseUrl + "/download/content/" + datasetId).cookies(cookies)
+                    .execute();
+            Document d = r.parse();
+
+            String line = firstLineWithMatch(d.data(), "kms_widget", "service_name");
+            if (line == null) {
+                throw new IOException("could not find kms_widget with service_name");
             }
-            String fileName = url.substring(url.lastIndexOf('/') + 1);
-            HttpURLConnection conn = openConnectionWithRetry(url);
-            receiver.receive(fileName, conn.getInputStream());
+            String json = line.substring(line.indexOf('{'), line.lastIndexOf('}') + 1);
+
+            @SuppressWarnings("unchecked")
+            Map<String, Object> m = gson.fromJson(json, Map.class);
+            @SuppressWarnings("unchecked")
+            Map<String, String> conf = (Map<String, String>) m.get("kms_widget");
+
+            String serviceName = conf.get("service_name");
+            boolean isSingleFile = serviceName == null;
+
+            if (isSingleFile) {
+                String filename = conf.get("selection_details");
+                if (!fileNameFilter.test(filename)) {
+                    return;
+                }
+                restFileNames.add(filename);
+            } else {
+                String jsonUrl = jsonUrlByServiceName.get(serviceName);
+                if (jsonUrl == null) {
+                    throw new IOException("unknown service name: " + serviceName + " for dataset: " + datasetId);
+                }
+
+                HttpURLConnection conn = (HttpURLConnection) new URL(jsonUrl).openConnection();
+                FeatureCollection featureCollection = gson.fromJson(new InputStreamReader(conn.getInputStream()),
+                        FeatureCollection.class);
+                for (Feature feature : featureCollection.features) {
+
+                    // norgeskart-xdm.js ported to java
+                    String name = feature.get("n");
+                    String filename;
+                    if (feature.id == null) {
+                        filename = name + conf.get("selection_details");
+                    } else if (feature.get("f") != null) {
+                        filename = feature.get("f") + conf.get("selection_details");
+                    } else {
+                        filename = feature.id + "_" + name + conf.get("selection_details");
+                    }
+
+                    filename = conf.get("service_layer") + "_" + filename.replace(' ', '_') + '_'
+                            + conf.get("dataformat");
+                    filename = filename + ("MrSID".equals(conf.get("dataformat")) ? ".sid" : ".zip");
+
+                    filename = filename.replace('æ', 'e');
+                    filename = filename.replace('Æ', 'E');
+                    filename = filename.replace('ø', 'o');
+                    filename = filename.replace('Ø', 'O');
+                    filename = filename.replace('å', 'a');
+                    filename = filename.replace('Å', 'A');
+
+                    if (!fileNameFilter.test(filename)) {
+                        continue;
+                    }
+
+                    restFileNames.add(filename);
+                }
+            }
+
+            // check if some files can be downloaded without ordering. typically
+            // when already ordered.
+            for (String fileName : new ArrayList<>(restFileNames)) {
+                String url = DatasetUrl.createUrl(datasetId, fileName);
+                if (url == null) {
+                    continue;
+                }
+                HttpURLConnection conn = openConnection(url);
+                // give 403 if not ordered. 200 if ordered.
+                if (conn.getResponseCode() == 200) {
+                    receiver.receive(fileName, conn.getInputStream());
+                    restFileNames.remove(fileName);
+                }
+            }
+
+            // order if there are anything left
+            for (List<String> someFileNames : Lists.partition(new ArrayList<>(restFileNames), MAX_CHART_SIZE)) {
+
+                // click add to chart
+                Element addToChartForm = d.select("form").get(0);
+                String addToChartUrl = baseUrl + addToChartForm.attr("action");
+                Map<String, String> formParameters = new HashMap<>();
+                formParameters.putAll(formInputParameters(addToChartForm));
+                formParameters.put("line_item_fields[field_selection][und][0][value]", gson.toJson(someFileNames));
+                formParameters.put("line_item_fields[field_selection_text][und][0][value]",
+                        isSingleFile ? "1 samlet fil" : someFileNames.size() + " filer");
+                Connection.Response res2 = Jsoup.connect(addToChartUrl).timeout(TIMEOUT_MILLIS).cookies(cookies)
+                        .method(Method.POST).data(formParameters).execute();
+                if (!res2.body().contains("ble lagt i")) {
+                    throw new IOException("not in chart");
+                }
+
+                // click checkout
+                Connection.Response checkoutResult = Jsoup.connect(baseUrl + "/download/checkout").cookies(cookies)
+                        .execute();
+                Document checkoutDocument = checkoutResult.parse();
+
+                // click continue
+                Element continueForm = checkoutDocument.select("form").get(0);
+                String continueUrl = baseUrl + continueForm.attr("action");
+                Map<String, String> continueParameters = new HashMap<>();
+                continueParameters.putAll(formInputParameters(continueForm));
+                continueParameters.put("op", "Fortsett");
+                Jsoup.connect(continueUrl).timeout(TIMEOUT_MILLIS).cookies(cookies).data(continueParameters)
+                        .method(Method.POST).execute();
+
+                // try to figure out url without going to checkout list
+                for (String fileName : someFileNames) {
+                    String url = DatasetUrl.createUrl(datasetId, fileName);
+                    if (url == null) {
+                        continue;
+                    }
+
+                    HttpURLConnection conn = openConnectionWithRetry(url);
+                    if (conn.getResponseCode() != 200) {
+                        continue;
+                    }
+
+                    receiver.receive(fileName, conn.getInputStream());
+                    restFileNames.remove(fileName);
+                }
+
+            }
+
+            // check that we got all files
+            if (!restFileNames.isEmpty()) {
+                throw new IOException("did not find urls for " + restFileNames);
+            }
+
         }
     }
 
