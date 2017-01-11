@@ -170,6 +170,10 @@ public class KartverketDownload extends Downloader {
 
         for (String datasetId : datasetIds) {
 
+            if (receiver.shouldStop()) {
+                break;
+            }
+
             Set<String> restFileNames = new HashSet<>();
 
             Connection.Response r = Jsoup.connect(baseUrl + "/download/content/" + datasetId).cookies(cookies)
@@ -240,6 +244,9 @@ public class KartverketDownload extends Downloader {
             // check if some files can be downloaded without ordering. typically
             // when already ordered.
             for (String fileName : new ArrayList<>(restFileNames)) {
+                if (receiver.shouldStop()) {
+                    break;
+                }
                 String url = DatasetUrl.createUrl(datasetId, fileName);
                 if (url == null) {
                     continue;
@@ -254,6 +261,9 @@ public class KartverketDownload extends Downloader {
 
             // order if there are anything left
             for (List<String> someFileNames : Lists.partition(new ArrayList<>(restFileNames), MAX_CHART_SIZE)) {
+                if (receiver.shouldStop()) {
+                    break;
+                }
 
                 // click add to chart
                 Element addToChartForm = d.select("form").get(0);
@@ -285,6 +295,10 @@ public class KartverketDownload extends Downloader {
 
                 // try to figure out url without going to checkout list
                 for (String fileName : someFileNames) {
+                    if (receiver.shouldStop()) {
+                        break;
+                    }
+
                     String url = DatasetUrl.createUrl(datasetId, fileName);
                     if (url == null) {
                         continue;
@@ -302,8 +316,8 @@ public class KartverketDownload extends Downloader {
             }
 
             // check that we got all files
-            if (!restFileNames.isEmpty()) {
-                throw new IOException("did not find urls for " + restFileNames);
+            if (!restFileNames.isEmpty() && !receiver.shouldStop()) {
+                throw new IOException("did not import " + restFileNames);
             }
 
         }
