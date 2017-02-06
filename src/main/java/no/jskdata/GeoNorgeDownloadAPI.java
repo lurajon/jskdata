@@ -9,9 +9,9 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
+import java.util.Set;
 
 import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
@@ -20,10 +20,10 @@ import no.jskdata.data.geonorge.Area;
 import no.jskdata.data.geonorge.Capabilities;
 import no.jskdata.data.geonorge.File;
 import no.jskdata.data.geonorge.Format;
+import no.jskdata.data.geonorge.Order;
 import no.jskdata.data.geonorge.OrderArea;
 import no.jskdata.data.geonorge.OrderLine;
 import no.jskdata.data.geonorge.OrderReceipt;
-import no.jskdata.data.geonorge.Order;
 import no.jskdata.data.geonorge.Projection;
 
 /**
@@ -33,18 +33,19 @@ import no.jskdata.data.geonorge.Projection;
  */
 public class GeoNorgeDownloadAPI extends Downloader {
 
-    private final Map<String, DatasetInfo> datasetInfoByDatasetId = new HashMap<>();
+    private final Set<String> datasetIds = new LinkedHashSet<>();
+    //private final Map<String, DatasetInfo> datasetInfoByDatasetId = new HashMap<>();
 
     private final Gson gson = new Gson();
 
     private String orderUrl;
 
     @Override
-    public void login() throws IOException {
+    public void dataset(String datasetId) {
+        datasetIds.add(datasetId);
     }
-
-    @Override
-    public void dataset(String datasetId) throws IOException {
+        
+    private DatasetInfo datasetInfo(String datasetId) throws IOException {
 
         String capabilitiesUrl = "https://nedlasting.geonorge.no/api/capabilities/" + datasetId;
         Capabilities capabilities = fetchAndParse(capabilitiesUrl, Capabilities.class);
@@ -81,7 +82,7 @@ public class GeoNorgeDownloadAPI extends Downloader {
         datasetInfo.projections = projections;
         datasetInfo.areas = areas;
 
-        datasetInfoByDatasetId.put(datasetId, datasetInfo);
+        return datasetInfo;
     }
 
     @Override
@@ -93,9 +94,8 @@ public class GeoNorgeDownloadAPI extends Downloader {
 
         Order order = new Order();
 
-        for (Map.Entry<String, DatasetInfo> e : datasetInfoByDatasetId.entrySet()) {
-            String datasetId = e.getKey();
-            DatasetInfo info = e.getValue();
+        for (String datasetId : datasetIds) {
+            DatasetInfo info = datasetInfo(datasetId);
 
             OrderLine orderLine = new OrderLine();
             orderLine.areas = info.orderAreasForCountry();
@@ -127,8 +127,10 @@ public class GeoNorgeDownloadAPI extends Downloader {
                 continue;
             }
 
+            currentDownloadUrl = file.downloadUrl;
             HttpURLConnection fileConn = (HttpURLConnection) new URL(file.downloadUrl).openConnection();
             receiver.receive(file.name, fileConn.getInputStream());
+            currentDownloadUrl = null;
         }
 
     }
@@ -153,7 +155,7 @@ public class GeoNorgeDownloadAPI extends Downloader {
 
     @Override
     public void clear() {
-        datasetInfoByDatasetId.clear();
+        datasetIds.clear();
     }
 
     private static class DatasetInfo {

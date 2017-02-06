@@ -19,7 +19,6 @@ public class KartverketDownloadTest extends DownloaderTestCase {
         String password = getProperty(PASSWORD_KEY);
 
         Downloader kd = new KartverketDownload(username, password);
-        kd.login();
         Set<String> fileNames = new HashSet<>();
 
         // test single file

@@ -19,7 +19,6 @@ public class GeoNorgeSkdl2Test extends DownloaderTestCase {
         String password = getProperty(PASSWORD_KEY);
 
         Downloader gnd = new GeoNorgeSkdl2(username, password);
-        gnd.login();
         gnd.setFileNameFilter(f -> f.endsWith("_Ledning.zip"));
         gnd.dataset("FKB-data");
         Set<String> fileNames = new HashSet<>();

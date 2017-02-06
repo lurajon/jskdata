@@ -49,9 +49,14 @@ public class GeoNorgeSkdl2 extends Downloader {
     public GeoNorgeSkdl2(String username, String password) {
         this.username = username;
         this.password = password;
+        try {
+            login();
+        } catch (IOException e) {
+            throw new IllegalStateException("could not log in", e);
+        }
     }
 
-    public void login() throws IOException {
+    private void login() throws IOException {
 
         Connection.Response r1 = Jsoup.connect(baseUrl + "/skdl2/").execute();
         addCookies(r1.cookies());
@@ -118,7 +123,7 @@ public class GeoNorgeSkdl2 extends Downloader {
     }
 
     @Override
-    public void dataset(String dataset) throws IOException {
+    public void dataset(String dataset) {
         select("datasett", dataset);
     }
 

@@ -10,6 +10,8 @@ import java.util.logging.Logger;
 public abstract class Downloader {
 
     protected Predicate<String> fileNameFilter = (String) -> true;
+    
+    protected String currentDownloadUrl;
 
     private Logger log;
 
@@ -20,13 +22,11 @@ public abstract class Downloader {
         return log;
     }
 
-    public abstract void login() throws IOException;
-
     public void setFileNameFilter(Predicate<String> fileNameFilter) {
         this.fileNameFilter = fileNameFilter;
     }
 
-    public abstract void dataset(String dataset) throws IOException;
+    public abstract void dataset(String dataset);
 
     public abstract void download(Receiver receiver) throws IOException;
 
@@ -48,7 +48,7 @@ public abstract class Downloader {
 
     public abstract void clear();
 
-    public static Downloader create(Map<String, String> options) throws IOException {
+    public static Downloader create(Map<String, String> options) {
         String type = options.get("type");
         if (type == null) {
             return new NoDownloader();
@@ -63,10 +63,8 @@ public abstract class Downloader {
             dl = new URLDownloader();
         } else if (hasUserAndPass && "data.kartverket.no".equals(type)) {
             dl = new KartverketDownload(username, password);
-            dl.login();
         } else if (hasUserAndPass && type.equals("GeoNorgeSkdl2")) {
             dl = new GeoNorgeSkdl2(username, password);
-            dl.login();
         } else if (type.equals("GeoNorgeDownloadAPI")) {
             dl = new GeoNorgeDownloadAPI();
         }
@@ -82,6 +80,16 @@ public abstract class Downloader {
         }
 
         return dl;
+    }
+    
+    /**
+     * The current download url used by {@link #download(Receiver)} and
+     * {@link #download(BiConsumer)}. Can be useful for debugging.
+     * 
+     * @return
+     */
+    public String getCurrentDownloadUrl() {
+        return currentDownloadUrl;
     }
 
 }

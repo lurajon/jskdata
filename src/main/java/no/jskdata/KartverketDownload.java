@@ -65,7 +65,7 @@ public class KartverketDownload extends Downloader {
         this.password = password;
     }
 
-    public void login() throws IOException {
+    private void login() throws IOException {
 
         Connection.Response res1 = Jsoup.connect(baseUrl + "/download/").execute();
         Document document = res1.parse();
@@ -83,15 +83,7 @@ public class KartverketDownload extends Downloader {
 
     }
 
-    public void logout() throws IOException {
-        if (!hasCookies()) {
-            return;
-        }
-        Jsoup.connect(baseUrl + "/download/user/logout").cookies(cookies).execute();
-        cookies = Collections.emptyMap();
-    }
-
-    public void dataset(String datasetId) throws IOException {
+    public void dataset(String datasetId) {
         datasetIds.add(datasetId);
     }
 
@@ -135,6 +127,10 @@ public class KartverketDownload extends Downloader {
     }
 
     private HttpURLConnection openConnection(String url) throws IOException {
+        if (!hasCookies()) {
+            login();
+        }
+        
         HttpURLConnection conn = (HttpURLConnection) new URL(url).openConnection();
         for (Map.Entry<String, String> cookie : cookies.entrySet()) {
             conn.setRequestProperty("Cookie", cookie.getKey() + "=" + cookie.getValue());
@@ -167,6 +163,9 @@ public class KartverketDownload extends Downloader {
 
     @Override
     public void download(Receiver receiver) throws IOException {
+        if (!hasCookies()) {
+            login();
+        }
 
         for (String datasetId : datasetIds) {
 
@@ -251,12 +250,14 @@ public class KartverketDownload extends Downloader {
                 if (url == null) {
                     continue;
                 }
+                currentDownloadUrl = url;
                 HttpURLConnection conn = openConnection(url);
                 // give 403 if not ordered. 200 if ordered.
                 if (conn.getResponseCode() == 200) {
                     receiver.receive(fileName, conn.getInputStream());
                     restFileNames.remove(fileName);
                 }
+                currentDownloadUrl = null;
             }
 
             // order if there are anything left
@@ -304,6 +305,7 @@ public class KartverketDownload extends Downloader {
                         continue;
                     }
 
+                    currentDownloadUrl = url;
                     HttpURLConnection conn = openConnectionWithRetry(url);
                     if (conn.getResponseCode() != 200) {
                         continue;
@@ -311,6 +313,7 @@ public class KartverketDownload extends Downloader {
 
                     receiver.receive(fileName, conn.getInputStream());
                     restFileNames.remove(fileName);
+                    currentDownloadUrl = null;
                 }
 
             }

@@ -18,11 +18,7 @@ class URLDownloader extends Downloader {
     }
 
     @Override
-    public void login() throws IOException {
-    }
-
-    @Override
-    public void dataset(String url) throws IOException {
+    public void dataset(String url) {
         if (!url.startsWith("http")) {
             throw new IllegalArgumentException("invalid url");
         }
@@ -39,9 +35,11 @@ class URLDownloader extends Downloader {
                 return;
             }
 
+            currentDownloadUrl = url;
             String fileName = url.substring(url.lastIndexOf('/') + 1);
             HttpURLConnection conn = (HttpURLConnection) new URL(url).openConnection();
             receiver.receive(fileName, conn.getInputStream());
+            currentDownloadUrl = null;
         }
     }
 

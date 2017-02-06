@@ -1,19 +1,13 @@
 package no.jskdata;
 
-import java.io.IOException;
-
 class NoDownloader extends Downloader {
 
     @Override
-    public void login() throws IOException {
+    public void dataset(String dataset) {
     }
 
     @Override
-    public void dataset(String dataset) throws IOException {
-    }
-
-    @Override
-    public void download(Receiver receiver) throws IOException {
+    public void download(Receiver receiver) {
     }
 
     @Override
