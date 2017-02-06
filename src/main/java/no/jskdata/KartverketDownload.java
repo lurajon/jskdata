@@ -126,12 +126,16 @@ public class KartverketDownload extends Downloader {
         datasetIds.clear();
     }
 
-    private HttpURLConnection openConnection(String url) throws IOException {
+    private HttpURLConnection openConnectionWithoutCookies(String url) throws IOException {
+        return (HttpURLConnection) new URL(url).openConnection();
+    }
+
+    private HttpURLConnection openConnectionWithCookies(String url) throws IOException {
         if (!hasCookies()) {
             login();
         }
-        
-        HttpURLConnection conn = (HttpURLConnection) new URL(url).openConnection();
+
+        HttpURLConnection conn = openConnectionWithoutCookies(url);
         for (Map.Entry<String, String> cookie : cookies.entrySet()) {
             conn.setRequestProperty("Cookie", cookie.getKey() + "=" + cookie.getValue());
         }
@@ -144,7 +148,7 @@ public class KartverketDownload extends Downloader {
         for (int i = 0; i < 10; i++) {
             try {
                 lastException = null;
-                HttpURLConnection conn = openConnection(url);
+                HttpURLConnection conn = openConnectionWithCookies(url);
                 lastStatus = conn.getResponseCode();
                 if (lastStatus == 200) {
                     return conn;
@@ -246,18 +250,38 @@ public class KartverketDownload extends Downloader {
                 if (receiver.shouldStop()) {
                     break;
                 }
-                String url = DatasetUrl.createUrl(datasetId, fileName);
+
+                // first see if it is available in /data without even using the
+                // cookies. seems like this is working most of the time.
+                String url = DatasetUrl.createAnonUrl(datasetId, fileName);
                 if (url == null) {
                     continue;
                 }
                 currentDownloadUrl = url;
-                HttpURLConnection conn = openConnection(url);
+                HttpURLConnection conn = openConnectionWithoutCookies(url);
+                if (conn.getResponseCode() == 200) {
+                    receiver.receive(fileName, conn.getInputStream());
+                    restFileNames.remove(fileName);
+                    currentDownloadUrl = null;
+                    continue;
+                }
+
+                // try with the session based url. should work if ordered not so
+                // long ago.
+                url = DatasetUrl.createUrl(datasetId, fileName);
+                if (url == null) {
+                    continue;
+                }
+                currentDownloadUrl = url;
+                conn = openConnectionWithCookies(url);
                 // give 403 if not ordered. 200 if ordered.
                 if (conn.getResponseCode() == 200) {
                     receiver.receive(fileName, conn.getInputStream());
                     restFileNames.remove(fileName);
+                    currentDownloadUrl = null;
+                    continue;
                 }
-                currentDownloadUrl = null;
+
             }
 
             // order if there are anything left
