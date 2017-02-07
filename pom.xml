@@ -4,7 +4,7 @@
     <groupId>no.jskdata</groupId>
     <artifactId>jskdata</artifactId>
     <packaging>jar</packaging>
-    <version>1.0.5-SNAPSHOT</version>
+    <version>1.0.6-SNAPSHOT</version>
     <name>jskdata</name>
     <url>http://maven.apache.org</url>
     <properties>
@@ -27,7 +27,7 @@
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
-            <version>20.0</version>
+            <version>21.0</version>
         </dependency>
         <dependency>
             <groupId>junit</groupId>
@@ -60,7 +60,6 @@
                         <id>attach-sources</id>
                         <goals>
                             <goal>jar</goal>
-                            <goal>test-jar</goal>
                         </goals>
                     </execution>
                 </executions>
