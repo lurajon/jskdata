@@ -35,170 +35,185 @@ import no.jskdata.data.geonorge.Projection;
  */
 public class GeoNorgeDownloadAPI extends Downloader {
 
-	private final Set<String> datasetIds = new LinkedHashSet<>();
+    private final Set<String> datasetIds = new LinkedHashSet<>();
 
-	private final Gson gson = new Gson();
+    private final Gson gson = new Gson();
 
-	@Override
-	public void dataset(String datasetId) {
-		datasetIds.add(datasetId);
-	}
+    @Override
+    public void dataset(String datasetId) {
+        datasetIds.add(datasetId);
+    }
 
-	private DatasetInfo datasetInfo(String datasetId) throws IOException {
+    private DatasetInfo datasetInfo(String datasetId) throws IOException {
 
-		String capabilitiesUrl = "https://nedlasting.geonorge.no/api/capabilities/" + datasetId;
-		Capabilities capabilities = fetchAndParse(capabilitiesUrl, Capabilities.class);
-		if (capabilities == null) {
-			throw new IllegalArgumentException("Invalid dataset: " + datasetId);
-		}
+        String capabilitiesUrl = "https://nedlasting.geonorge.no/api/capabilities/" + datasetId;
+        Capabilities capabilities = fetchAndParse(capabilitiesUrl, Capabilities.class);
+        if (capabilities == null) {
+            throw new IllegalArgumentException("Invalid dataset: " + datasetId);
+        }
 
-		String orderUrl = capabilities.getOrderUrl();
+        String orderUrl = capabilities.getOrderUrl();
 
-		@SuppressWarnings("serial")
-		List<Format> formats = fetchAndParse(capabilities.getFormatUrl(), new TypeToken<ArrayList<Format>>() {
-		}.getType());
-		if (formats == null || formats.isEmpty()) {
-			throw new IllegalArgumentException("Dataset does not have any formats: " + datasetId);
-		}
+        @SuppressWarnings("serial")
+        List<Format> formats = fetchAndParse(capabilities.getFormatUrl(), new TypeToken<ArrayList<Format>>() {
+        }.getType());
+        if (formats == null || formats.isEmpty()) {
+            throw new IllegalArgumentException("Dataset does not have any formats: " + datasetId);
+        }
 
-		@SuppressWarnings("serial")
-		List<Projection> projections = fetchAndParse(capabilities.getProjectionUrl(),
-				new TypeToken<ArrayList<Projection>>() {
-				}.getType());
-		if (projections == null || projections.isEmpty()) {
-			throw new IllegalArgumentException("Dataset does not have any projections: " + datasetId);
-		}
+        @SuppressWarnings("serial")
+        List<Projection> projections = fetchAndParse(capabilities.getProjectionUrl(),
+                new TypeToken<ArrayList<Projection>>() {
+                }.getType());
+        if (projections == null || projections.isEmpty()) {
+            throw new IllegalArgumentException("Dataset does not have any projections: " + datasetId);
+        }
 
-		@SuppressWarnings("serial")
-		List<Area> areas = fetchAndParse(capabilities.getAreaUrl(), new TypeToken<ArrayList<Area>>() {
-		}.getType());
-		if (projections == null || projections.isEmpty()) {
-			throw new IllegalArgumentException("Dataset does not have any areas: " + datasetId);
-		}
+        @SuppressWarnings("serial")
+        List<Area> areas = fetchAndParse(capabilities.getAreaUrl(), new TypeToken<ArrayList<Area>>() {
+        }.getType());
+        if (projections == null || projections.isEmpty()) {
+            throw new IllegalArgumentException("Dataset does not have any areas: " + datasetId);
+        }
 
-		DatasetInfo datasetInfo = new DatasetInfo();
-		datasetInfo.orderUrl = orderUrl;
-		datasetInfo.formats = formats;
-		datasetInfo.projections = projections;
-		datasetInfo.areas = areas;
+        DatasetInfo datasetInfo = new DatasetInfo();
+        datasetInfo.orderUrl = orderUrl;
+        datasetInfo.formats = formats;
+        datasetInfo.projections = projections;
+        datasetInfo.areas = areas;
 
-		return datasetInfo;
-	}
+        return datasetInfo;
+    }
 
-	@Override
-	public void download(Receiver receiver) throws IOException {
+    @Override
+    public void download(Receiver receiver) throws IOException {
 
-		Map<String, Order> orderByOrderUrl = new HashMap<>();
+        Map<String, Order> orderByOrderUrl = new HashMap<>();
 
-		for (String datasetId : datasetIds) {
-			DatasetInfo info = datasetInfo(datasetId);
+        for (String datasetId : datasetIds) {
+            DatasetInfo info = datasetInfo(datasetId);
 
-			Order order = orderByOrderUrl.get(info.orderUrl);
-			if (order == null) {
-				order = new Order();
-				orderByOrderUrl.put(info.orderUrl, order);
-			}
+            Order order = orderByOrderUrl.get(info.orderUrl);
+            if (order == null) {
+                order = new Order();
+                orderByOrderUrl.put(info.orderUrl, order);
+            }
 
-			OrderLine orderLine = new OrderLine();
-			orderLine.areas = info.orderAreasForCountry();
-			orderLine.metadataUuid = datasetId;
-			orderLine.formats = info.formats;
-			orderLine.projections = info.projections;
+            OrderLine orderLine = new OrderLine();
+            orderLine.areas = info.orderAreasForCountry();
+            orderLine.metadataUuid = datasetId;
+            orderLine.formats = info.formats;
+            orderLine.projections = info.projections;
 
-			order.addOrderLine(orderLine);
-		}
+            order.addOrderLine(orderLine);
+        }
 
-		if (orderByOrderUrl.isEmpty()) {
-			return;
-		}
+        if (orderByOrderUrl.isEmpty()) {
+            return;
+        }
 
-		for (Map.Entry<String, Order> e : orderByOrderUrl.entrySet()) {
-			String orderUrl = e.getKey();
-			Order order = e.getValue();
+        for (Map.Entry<String, Order> e : orderByOrderUrl.entrySet()) {
+            String orderUrl = e.getKey();
+            Order order = e.getValue();
 
-			HttpURLConnection conn = (HttpURLConnection) new URL(orderUrl).openConnection();
-			conn.setRequestMethod("POST");
-			conn.setRequestProperty("Content-Type", "application/json");
-			conn.setDoInput(true);
-			conn.setDoOutput(true);
-			OutputStream out = conn.getOutputStream();
-			out.write(gson.toJson(order).getBytes("UTF-8"));
-			out.flush();
+            HttpURLConnection conn = (HttpURLConnection) new URL(orderUrl).openConnection();
+            conn.setRequestMethod("POST");
+            conn.setRequestProperty("Content-Type", "application/json");
+            conn.setDoInput(true);
+            conn.setDoOutput(true);
+            OutputStream out = conn.getOutputStream();
+            out.write(gson.toJson(order).getBytes("UTF-8"));
+            out.flush();
 
-			Reader reader = new InputStreamReader(conn.getInputStream());
-			OrderReceipt reciept = gson.fromJson(reader, OrderReceipt.class);
+            Reader reader = new InputStreamReader(conn.getInputStream());
+            OrderReceipt reciept = gson.fromJson(reader, OrderReceipt.class);
 
-			for (File file : reciept.getFiles()) {
-				if (!fileNameFilter.test(file.name)) {
-					continue;
-				}
+            for (File file : reciept.getFiles()) {
+                if (!fileNameFilter.test(file.name)) {
+                    continue;
+                }
 
-				currentDownloadUrl = file.downloadUrl;
-				HttpURLConnection fileConn = (HttpURLConnection) new URL(file.downloadUrl).openConnection();
-				receiver.receive(file.name, fileConn.getInputStream());
-				currentDownloadUrl = null;
-			}
-		}
+                currentDownloadUrl = file.downloadUrl;
 
-	}
+                // doing redirect manually as auto does not work. probably
+                // because of strange "WWW-Authenticate: Basic"
+                while (true) {
+                    HttpURLConnection fileConn = (HttpURLConnection) new URL(currentDownloadUrl).openConnection();
+                    fileConn.setInstanceFollowRedirects(false);
+                    int code = fileConn.getResponseCode();
+                    if (code >= 300 && code <= 399) {
+                        String url = fileConn.getHeaderField("Location");
+                        if (url != null) {
+                            currentDownloadUrl = url;
+                            continue;
+                        }
+                    }
+                    receiver.receive(file.name, fileConn.getInputStream());
+                    break;
+                }
+                currentDownloadUrl = null;
+            }
+        }
 
-	private <T> T fetchAndParse(String url, Class<T> type) throws IOException {
-		HttpURLConnection conn = (HttpURLConnection) new URL(url).openConnection();
-		if (conn.getResponseCode() == 404) {
-			return null;
-		}
-		Reader reader = new InputStreamReader(conn.getInputStream());
-		return gson.fromJson(reader, type);
-	}
+    }
 
-	private <T> T fetchAndParse(String url, Type type) throws IOException {
-		HttpURLConnection conn = (HttpURLConnection) new URL(url).openConnection();
-		if (conn.getResponseCode() == 404) {
-			return null;
-		}
-		Reader reader = new InputStreamReader(conn.getInputStream());
-		return gson.fromJson(reader, type);
-	}
+    private <T> T fetchAndParse(String url, Class<T> type) throws IOException {
+        HttpURLConnection conn = (HttpURLConnection) new URL(url).openConnection();
+        if (conn.getResponseCode() == 404) {
+            return null;
+        }
+        Reader reader = new InputStreamReader(conn.getInputStream());
+        return gson.fromJson(reader, type);
+    }
 
-	@Override
-	public void clear() {
-		datasetIds.clear();
-	}
+    private <T> T fetchAndParse(String url, Type type) throws IOException {
+        HttpURLConnection conn = (HttpURLConnection) new URL(url).openConnection();
+        if (conn.getResponseCode() == 404) {
+            return null;
+        }
+        Reader reader = new InputStreamReader(conn.getInputStream());
+        return gson.fromJson(reader, type);
+    }
 
-	private static class DatasetInfo {
+    @Override
+    public void clear() {
+        datasetIds.clear();
+    }
 
-		String orderUrl;
-		List<Format> formats;
-		List<Projection> projections;
-		List<Area> areas;
+    private static class DatasetInfo {
 
-		public List<OrderArea> orderAreasForCountry() {
-			if (areas == null) {
-				return Collections.emptyList();
-			}
+        String orderUrl;
+        List<Format> formats;
+        List<Projection> projections;
+        List<Area> areas;
 
-			// look for country wide
-			for (Area area : areas) {
-				if (area.isCountryWide()) {
-					return Collections.singletonList(area.asOrderArea());
-				}
-			}
+        public List<OrderArea> orderAreasForCountry() {
+            if (areas == null) {
+                return Collections.emptyList();
+            }
 
-			List<OrderArea> countys = new ArrayList<>();
-			for (Area area : areas) {
-				if (area.isCounty()) {
-					countys.add(area.asOrderArea());
-				}
-			}
-			if (!countys.isEmpty()) {
-				return countys;
-			}
+            // look for country wide
+            for (Area area : areas) {
+                if (area.isCountryWide()) {
+                    return Collections.singletonList(area.asOrderArea());
+                }
+            }
 
-			// give up
-			return Collections.emptyList();
+            List<OrderArea> countys = new ArrayList<>();
+            for (Area area : areas) {
+                if (area.isCounty()) {
+                    countys.add(area.asOrderArea());
+                }
+            }
+            if (!countys.isEmpty()) {
+                return countys;
+            }
 
-		}
+            // give up
+            return Collections.emptyList();
 
-	}
+        }
+
+    }
 
 }
