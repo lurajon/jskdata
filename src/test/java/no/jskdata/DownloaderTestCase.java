@@ -15,6 +15,9 @@ public abstract class DownloaderTestCase extends TestCase {
     protected String getProperty(String key) {
         String value = System.getProperty(key);
         if (value == null) {
+            value = System.getenv(key);
+        }
+        if (value == null) {
             fail("missing " + key + " property");
         }
         return value;
