@@ -1,6 +1,9 @@
 package no.jskdata.data.geonorge;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.function.Predicate;
 
 public class Area {
 
@@ -29,6 +32,34 @@ public class Area {
         oa.type = type;
         oa.name = name;
         return oa;
+    }
+    
+    public boolean hasFormat(Predicate<String> formatNameFilter) {
+        for (Format format : formats) {
+            if (formatNameFilter.test(format.name)) {
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    public List<Format> formats(Predicate<String> formatNameFilter) {
+        List<Format> r = new ArrayList<>();
+        for (Format format : formats) {
+            if (formatNameFilter.test(format.name)) {
+                r.add(format);
+            }
+        }
+        return Collections.unmodifiableList(r);
+    }
+    
+    public Projection getProjection() {
+        return Collections.min(projections);
+    }
+
+    @Override
+    public String toString() {
+        return super.toString() + "{code:" + code + ", type: " + type + ", name: " + name + "}";
     }
 
 }

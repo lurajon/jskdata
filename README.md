@@ -33,11 +33,18 @@ A java downloader for http://data.kartverket.no/download/ ,  https://download.ge
   skdl2.download((fileName, in) -> { # or implement Receiver
   });
   
-  // download using GeoNorge "NedlastingsAPI"
+  // download using GeoNorge "NedlastingsAPI" anonymously
   Downloader gndlapi = new GeoNorgeDownloadAPI();
-  gndlapi.setFileNameFilter(n -> n.contains("SOSI"));
+  gndlapi.setFormatNameFilter(n -> n.contains("SOSI"));
   gndlapi.dataset("28c896d0-8a0d-4209-bf31-4931033b1082");
   gndlapi.download((fileName, in) -> { # or implement Receiver
+  });
+  
+  // download using GeoNorge "NedlastingsAPI" with authentication
+  Downloader gndlapia = new GeoNorgeDownloadAPI(geonorgeUsername, geonorgePassword);
+  gndlapia.setFormatNameFilter(n -> n.contains("SOSI"));
+  gndlapia.dataset("6e05aefb-f90e-4c7d-9fb9-299574d0bbf6");
+  gndlapia.download((fileName, in) -> { # or implement Receiver
   });
   
 ```

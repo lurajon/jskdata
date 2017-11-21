@@ -11,6 +11,8 @@ public abstract class Downloader {
 
     protected Predicate<String> fileNameFilter = (String) -> true;
     
+    protected Predicate<String> formatNameFilter = (String) -> true;
+    
     protected String currentDownloadUrl;
 
     private Logger log;
@@ -24,6 +26,10 @@ public abstract class Downloader {
 
     public void setFileNameFilter(Predicate<String> fileNameFilter) {
         this.fileNameFilter = fileNameFilter;
+    }
+    
+    public void setFormatNameFilter(Predicate<String> formatNameFilter) {
+        this.formatNameFilter = formatNameFilter;
     }
 
     public abstract void dataset(String dataset);
@@ -66,7 +72,7 @@ public abstract class Downloader {
         } else if (hasUserAndPass && type.equals("GeoNorgeSkdl2")) {
             dl = new GeoNorgeSkdl2(username, password);
         } else if (type.equals("GeoNorgeDownloadAPI")) {
-            dl = new GeoNorgeDownloadAPI();
+            dl = new GeoNorgeDownloadAPI(username, password);
         }
 
         String dataset = options.get("dataset");
@@ -77,6 +83,11 @@ public abstract class Downloader {
         String fileNameSuffix = options.get("fileNameSuffix");
         if (fileNameSuffix != null) {
             dl.setFileNameFilter(n -> n.endsWith(fileNameSuffix));
+        }
+
+        String formatName = options.get("formatName");
+        if (formatName != null) {
+            dl.setFormatNameFilter(n -> n.contains(formatName));
         }
 
         return dl;

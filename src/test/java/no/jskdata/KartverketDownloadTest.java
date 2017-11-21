@@ -15,8 +15,8 @@ public class KartverketDownloadTest extends DownloaderTestCase {
 
     public void testDownload() throws IOException {
 
-        String username = getProperty(USERNAME_KEY);
-        String password = getProperty(PASSWORD_KEY);
+        String username = getRequiredProperty(USERNAME_KEY);
+        String password = getRequiredProperty(PASSWORD_KEY);
 
         Downloader kd = new KartverketDownload(username, password);
         Set<String> fileNames = new HashSet<>();

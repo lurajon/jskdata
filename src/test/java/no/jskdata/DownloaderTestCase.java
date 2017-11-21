@@ -11,12 +11,22 @@ import java.util.zip.ZipInputStream;
 import junit.framework.TestCase;
 
 public abstract class DownloaderTestCase extends TestCase {
+    
+    protected static final String USERNAME_KEY = "geonorge.username";
 
+    protected static final String PASSWORD_KEY = "geonorge.password";
+    
     protected String getProperty(String key) {
         String value = System.getProperty(key);
         if (value == null) {
             value = System.getenv(key);
         }
+        return value;
+    }
+
+
+    protected String getRequiredProperty(String key) {
+        String value = getProperty(key);
         if (value == null) {
             fail("missing " + key + " property");
         }

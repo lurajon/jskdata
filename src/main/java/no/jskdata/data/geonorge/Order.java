@@ -9,7 +9,7 @@ import java.util.List;
  */
 public class Order {
 
-    public String email;
+    public String email = "";
     public final List<OrderLine> orderLines = new ArrayList<>();
 
     public void addOrderLine(OrderLine orderLine) {

@@ -9,14 +9,10 @@ import com.google.common.io.ByteStreams;
 
 public class GeoNorgeSkdl2Test extends DownloaderTestCase {
 
-    private static final String USERNAME_KEY = "geonorge.username";
-
-    private static final String PASSWORD_KEY = "geonorge.password";
-
     public void testDownload() throws IOException {
 
-        String username = getProperty(USERNAME_KEY);
-        String password = getProperty(PASSWORD_KEY);
+        String username = getRequiredProperty(USERNAME_KEY);
+        String password = getRequiredProperty(PASSWORD_KEY);
 
         Downloader gnd = new GeoNorgeSkdl2(username, password);
         gnd.setFileNameFilter(f -> f.endsWith("_Ledning.zip"));
