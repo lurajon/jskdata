@@ -146,7 +146,7 @@ public class GeoNorgeDownloadAPI extends Downloader {
                 page = page.getElementById("regularsubmit").click();
                 
                 for (String metadataUUID : datasetIds) {
-                    // an extra request is needed. what a mess.
+                    // an extra request is needed..
                     page = client.getPage(directoryUrlPrefix + "AuthServices/SignIn?ReturnUrl="
                             + ue(downloadUrlPrefix + "AuthServices/SignIn?ReturnUrl=" + ue(directoryUrlPrefix
                                     + "search?text=" + metadataUUID + "&addtocart_event_id=" + metadataUUID)));
