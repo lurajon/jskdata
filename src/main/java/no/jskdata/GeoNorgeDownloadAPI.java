@@ -220,21 +220,36 @@ public class GeoNorgeDownloadAPI extends Downloader {
 
                 currentDownloadUrl = file.downloadUrl;
 
+                int singleFileRetryNumber = 0;
                 while (true) {
-                    HttpURLConnection fileConn = (HttpURLConnection) new URL(currentDownloadUrl).openConnection();
-                    fileConn.setInstanceFollowRedirects(false);
-                    if (cookiesValue.length() > 0) {
-                        fileConn.setRequestProperty("Cookie", cookiesValue.toString());
-                    }
-                    int code = fileConn.getResponseCode();
-                    if (code >= 300 && code <= 399) {
-                        String url = fileConn.getHeaderField("Location");
-                        if (url != null) {
-                            currentDownloadUrl = url;
-                            continue;
+                    singleFileRetryNumber++;
+                    HttpURLConnection fileConn = null;
+                    InputStream in = null;
+                    try {
+                        fileConn = (HttpURLConnection) new URL(currentDownloadUrl).openConnection();
+                        fileConn.setInstanceFollowRedirects(false);
+                        if (cookiesValue.length() > 0) {
+                            fileConn.setRequestProperty("Cookie", cookiesValue.toString());
                         }
+                        int code = fileConn.getResponseCode();
+                        if (code >= 300 && code <= 399) {
+                            String url = fileConn.getHeaderField("Location");
+                            if (url != null) {
+                                currentDownloadUrl = url;
+                                continue;
+                            }
+                        }
+                        in = fileConn.getInputStream();
+                    } catch (IOException retryException) {
+                        if (singleFileRetryNumber > 10) {
+                            getLogger().info("tried " + singleFileRetryNumber + " times. give up. "
+                                    + retryException.getMessage() + ". " + currentDownloadUrl);
+                            throw retryException;
+                        }
+                        getLogger().info("will retry. " + retryException.getMessage() + ". " + currentDownloadUrl);
+                        continue;
                     }
-                    receiver.receive(file.name, fileConn.getInputStream());
+                    receiver.receive(file.name, in);
                     break;
                 }
 
