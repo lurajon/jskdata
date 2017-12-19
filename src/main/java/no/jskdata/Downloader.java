@@ -73,6 +73,8 @@ public abstract class Downloader {
             dl = new GeoNorgeSkdl2(username, password);
         } else if (type.equals("GeoNorgeDownloadAPI")) {
             dl = new GeoNorgeDownloadAPI(username, password);
+        } else if (type.equals("hoydedata.no")) {
+            dl = new Hoydedata();
         }
 
         String dataset = options.get("dataset");
