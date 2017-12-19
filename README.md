@@ -1,6 +1,8 @@
 # jskdata
 
-A java downloader for http://data.kartverket.no/download/ ,  https://download.geonorge.no/skdl2/ and [GeoNorge Download API](https://www.geonorge.no/for-utviklere/APIer-og-grensesnitt/nedlastingsapiet/).
+A java downloader for http://data.kartverket.no/download/ ,  https://download.geonorge.no/skdl2/,
+[GeoNorge Download API](https://www.geonorge.no/for-utviklere/APIer-og-grensesnitt/nedlastingsapiet/) and
+[Hoydedata] (http://www.hoydedata.no/Laserinnsyn).
 
 ## Maven
 
