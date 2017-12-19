@@ -77,11 +77,22 @@ public class Hoydedata extends Downloader {
                     continue;
                 }
                 String fileId = links.first().text();
+                // Exact match for DTM10,DOM10,DTM50,DOM50
+                boolean found=false;
+                String downloadUrl = null;
+                String fileSize = null;
+                String fileName = null;
                 if (datasetId.equals(fileId)) {
+                    found=true;
+                    fileName = datasetId+"-"+utmzone+".zip";
+                } else if (fileId.substring(0,5).equals(datasetId+" ")) {
+                    found = true;
+                    fileName = fileId.replace(" ","_")+"-"+utmzone+".zip";
+                }
+                if (found) {
                     File fil = new File();
-                    fil.downloadUrl = links.first().attr("abs:href").trim();
-                    fil.name = datasetId+"-"+utmzone+".zip";
-                    //fil.fileSize =
+                    fil.downloadUrl = links.first().attr("abs:href").trim();;
+                    fil.name = fileName;
                     if (cols.size() == 2) {
                         fil.fileSize = cols.get(1).text();
                     }

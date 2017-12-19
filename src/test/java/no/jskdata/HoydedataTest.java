@@ -1,7 +1,6 @@
 package no.jskdata;
 
 import com.google.common.io.ByteStreams;
-import jdk.nashorn.internal.ir.annotations.Ignore;
 import no.jskdata.data.geonorge.File;
 
 import java.io.IOException;
@@ -10,9 +9,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-/**
- * Created by Grotan_Bjorn_Ove on 19.12.2017.
- */
 public class HoydedataTest extends DownloaderTestCase {
 
     public void testGetFilelistForDataset() throws IOException{
@@ -23,7 +19,13 @@ public class HoydedataTest extends DownloaderTestCase {
         assertFalse(files.isEmpty());
     }
 
-
+    public void testGetFilelistForLargeDataset() throws IOException {
+        Hoydedata h = new Hoydedata();
+        List<File> files = h.getFilesforDataset("DTM1","33");
+        assertNotNull(files);
+        assertFalse(files.isEmpty());
+        assertTrue(files.size()>10);
+    }
 
     public void testDownloadOneDataset() throws IOException {
         Set<String> fileNames = new HashSet<>();
@@ -45,6 +47,7 @@ public class HoydedataTest extends DownloaderTestCase {
         assertEquals(1, fileNames.size());
         h.clear();
     }
+
     public void testDownloadTwoDatasets() throws IOException {
         Set<String> fileNames = new HashSet<>();
         Hoydedata h = new Hoydedata();
@@ -63,4 +66,5 @@ public class HoydedataTest extends DownloaderTestCase {
         assertEquals(2, fileNames.size());
         h.clear();
     }
+
 }
