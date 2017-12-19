@@ -48,10 +48,10 @@ A java downloader for http://data.kartverket.no/download/ ,  https://download.ge
   });
 
   // download using free and open National Elevation Models from hoydedata.no
-   Downloader hoydedata = new Hoydedata();
-   hoydedata.setUtmzone("33");
-   hoydedata.dataset("DTM50");
-   hoydedata.download((fileName,in) -> { # or implement Receiver
+  Downloader hoydedata = new Hoydedata();
+  hoydedata.setUtmzone("33");
+  hoydedata.dataset("DTM50");
+  hoydedata.download((fileName,in) -> { # or implement Receiver
 ```
 
 ## Test
