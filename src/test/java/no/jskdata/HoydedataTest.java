@@ -29,11 +29,8 @@ public class HoydedataTest extends DownloaderTestCase {
 
     public void testDownloadOneDataset() throws IOException {
         Set<String> fileNames = new HashSet<>();
-        // test single file
-        fileNames.clear();
 
         Hoydedata h = new Hoydedata();
-        h.setUtmzone("33");
         h.dataset("DTM50");
         h.download(new DefaultReceiver() {
 
@@ -51,7 +48,6 @@ public class HoydedataTest extends DownloaderTestCase {
     public void testDownloadTwoDatasets() throws IOException {
         Set<String> fileNames = new HashSet<>();
         Hoydedata h = new Hoydedata();
-        h.setUtmzone("33");
         h.dataset("DTM50");
         h.dataset("DOM50");
         h.download(new DefaultReceiver() {

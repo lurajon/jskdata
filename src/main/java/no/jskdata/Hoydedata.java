@@ -19,11 +19,9 @@ import org.jsoup.select.Elements;
  */
 public class Hoydedata extends Downloader {
 
-    private String utmzone = "33";
+    private String utmzone = "33"; // default fallback UTM Zone (EUREF-89)
     private final Set<String> datasetIds = new HashSet<>();
     private final String baseUrl = "https://hoydedata.no/LaserInnsyn/";
-
-    //private final List<String> datasets = new ArrayList<String>() {"DTM1","DOM1","DTM10","DOM10","DTM50","DOM50"};
 
     public Hoydedata() {
     }
@@ -31,6 +29,7 @@ public class Hoydedata extends Downloader {
     public void setUtmzone(String utmzone) {
         this.utmzone = utmzone;
     }
+
     public void dataset(String datasetId) {
         datasetIds.add(datasetId);
     }
@@ -62,6 +61,10 @@ public class Hoydedata extends Downloader {
 
 
         }
+    }
+
+    public List<File> getFilesforDataset(String datasetId) throws IOException {
+        return getFilesforDataset(datasetId,this.utmzone);
     }
 
     public List<File> getFilesforDataset(String datasetId,String utmzone) throws IOException {
