@@ -46,7 +46,12 @@ A java downloader for http://data.kartverket.no/download/ ,  https://download.ge
   gndlapia.dataset("6e05aefb-f90e-4c7d-9fb9-299574d0bbf6");
   gndlapia.download((fileName, in) -> { # or implement Receiver
   });
-  
+
+  // download using free and open National Elevation Models from hoydedata.no
+   Downloader hoydedata = new Hoydedata();
+   hoydedata.setUtmzone("33");
+   hoydedata.dataset("DTM50");
+   hoydedata.download((fileName,in) -> { # or implement Receiver
 ```
 
 ## Test
