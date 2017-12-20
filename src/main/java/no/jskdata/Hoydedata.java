@@ -47,14 +47,15 @@ public class Hoydedata extends Downloader {
             if (receiver.shouldStop()) {
                 break;
             }
-            List<File> datasetFiles = getFilesforDataset(datasetId,utmzone);
-            if (datasetFiles.isEmpty()) {
-                break;
+            List<String> urls = getFilesforDataset(datasetId,utmzone);
+            if (urls.isEmpty()) {
+                continue;
             }
-            for (File file:datasetFiles) {
-                HttpURLConnection conn = openConnectionWithoutCookies(file.downloadUrl);
+            for (String url:urls) {
+                HttpURLConnection conn = openConnectionWithoutCookies(url);
                 if (conn.getResponseCode() == 200) {
-                    receiver.receive(file.name, conn.getInputStream());
+                    String fileName = conn.getHeaderField("Content-Disposition");
+                    receiver.receive(fileName, conn.getInputStream());
                     continue;
                 }
             }
@@ -63,12 +64,12 @@ public class Hoydedata extends Downloader {
         }
     }
 
-    public List<File> getFilesforDataset(String datasetId) throws IOException {
+    public List<String> getFilesforDataset(String datasetId) throws IOException {
         return getFilesforDataset(datasetId,this.utmzone);
     }
 
-    public List<File> getFilesforDataset(String datasetId,String utmzone) throws IOException {
-        List<File> files = new ArrayList<File>();
+    public List<String> getFilesforDataset(String datasetId,String utmzone) throws IOException {
+        List<String> files = new ArrayList<String>();
         Connection.Response r = Jsoup.connect(baseUrl).execute();
         Document d = r.parse();
         Elements dlContent = d.getElementsByClass("dlContent sone"+utmzone);
@@ -82,24 +83,13 @@ public class Hoydedata extends Downloader {
                 String fileId = links.first().text();
                 // Exact match for DTM10,DOM10,DTM50,DOM50
                 boolean found=false;
-                String downloadUrl = null;
-                String fileSize = null;
-                String fileName = null;
                 if (datasetId.equals(fileId)) {
                     found=true;
-                    fileName = datasetId+"-"+utmzone+".zip";
                 } else if (fileId.substring(0,5).equals(datasetId+" ")) {
                     found = true;
-                    fileName = fileId.replace(" ","_")+"-"+utmzone+".zip";
                 }
                 if (found) {
-                    File fil = new File();
-                    fil.downloadUrl = links.first().attr("abs:href").trim();;
-                    fil.name = fileName;
-                    if (cols.size() == 2) {
-                        fil.fileSize = cols.get(1).text();
-                    }
-                    files.add(fil);
+                    files.add(links.first().attr("abs:href").trim());
                 }
             } else {
                 continue;

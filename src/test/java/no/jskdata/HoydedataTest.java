@@ -13,7 +13,7 @@ public class HoydedataTest extends DownloaderTestCase {
 
     public void testGetFilelistForDataset() throws IOException{
         Hoydedata h = new Hoydedata();
-        List<File> files = h.getFilesforDataset("DTM50","33");
+        List<String> files = h.getFilesforDataset("DTM50","33");
         //expecting 1 file
         assertNotNull(files);
         assertFalse(files.isEmpty());
@@ -21,7 +21,7 @@ public class HoydedataTest extends DownloaderTestCase {
 
     public void testGetFilelistForLargeDataset() throws IOException {
         Hoydedata h = new Hoydedata();
-        List<File> files = h.getFilesforDataset("DTM1","33");
+        List<String> files = h.getFilesforDataset("DTM1","33");
         assertNotNull(files);
         assertFalse(files.isEmpty());
         assertTrue(files.size()>10);
