@@ -67,6 +67,7 @@ mvn -Ddata.kartverket.no.username=... \
 ## Thanks
 * [@atlefren](https://github.com/atlefren/) for [skdata](https://github.com/atlefren/skdata) that jskdatas `KartverketDownload` is mostly a java variant of.
 * [@jhy](https://github.com/jhy/) for [jsoup](https://github.com/jhy/jsoup) that jskdata uses for HTML parsing.
+* [@bgrotan](https://github.com/bgrotan/) for adding support for [Hoydedata](http://www.hoydedata.no/Laserinnsyn).
 * Google for Gson and Guava.
 * Kartverket.
 
