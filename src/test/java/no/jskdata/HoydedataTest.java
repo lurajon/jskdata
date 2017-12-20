@@ -1,13 +1,12 @@
 package no.jskdata;
 
-import com.google.common.io.ByteStreams;
-import no.jskdata.data.geonorge.File;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+
+import com.google.common.io.ByteStreams;
 
 public class HoydedataTest extends DownloaderTestCase {
 
@@ -47,7 +46,7 @@ public class HoydedataTest extends DownloaderTestCase {
 
     public void testDownloadTwoDatasets() throws IOException {
         Set<String> fileNames = new HashSet<>();
-        Hoydedata h = new Hoydedata();
+        Downloader h = new Hoydedata();
         h.dataset("DTM50");
         h.dataset("DOM50");
         h.download(new DefaultReceiver() {
@@ -60,7 +59,6 @@ public class HoydedataTest extends DownloaderTestCase {
             }
         });
         assertEquals(2, fileNames.size());
-        h.clear();
     }
 
 }

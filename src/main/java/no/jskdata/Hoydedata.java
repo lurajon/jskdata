@@ -1,12 +1,12 @@
 package no.jskdata;
 
-import no.jskdata.Downloader;
-import no.jskdata.data.geonorge.File;
-
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 import org.jsoup.Connection;
 import org.jsoup.Jsoup;
@@ -37,30 +37,26 @@ public class Hoydedata extends Downloader {
         datasetIds.clear();
     }
 
-    private HttpURLConnection openConnectionWithoutCookies(String url) throws IOException {
-        return (HttpURLConnection) new URL(url).openConnection();
-    }
-
     @Override
     public void download(Receiver receiver) throws IOException {
         for (String datasetId : datasetIds) {
             if (receiver.shouldStop()) {
                 break;
             }
-            List<String> urls = getFilesforDataset(datasetId,utmzone);
-            if (urls.isEmpty()) {
-                continue;
-            }
-            for (String url:urls) {
-                HttpURLConnection conn = openConnectionWithoutCookies(url);
+            for (String url : getFilesforDataset(datasetId, utmzone)) {
+                HttpURLConnection conn = (HttpURLConnection) new URL(url).openConnection();
                 if (conn.getResponseCode() == 200) {
                     String fileName = conn.getHeaderField("Content-Disposition");
+                    if (fileName != null) {
+                        int p = fileName.lastIndexOf('=');
+                        if (p > 0) {
+                            fileName = fileName.substring(p + 1);
+                        }
+                    }
                     receiver.receive(fileName, conn.getInputStream());
                     continue;
                 }
             }
-
-
         }
     }
 
@@ -69,7 +65,7 @@ public class Hoydedata extends Downloader {
     }
 
     public List<String> getFilesforDataset(String datasetId,String utmzone) throws IOException {
-        List<String> files = new ArrayList<String>();
+        List<String> files = new ArrayList<>();
         Connection.Response r = Jsoup.connect(baseUrl).execute();
         Document d = r.parse();
         Elements dlContent = d.getElementsByClass("dlContent sone"+utmzone);
