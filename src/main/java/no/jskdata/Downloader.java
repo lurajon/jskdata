@@ -75,6 +75,8 @@ public abstract class Downloader {
             dl = new GeoNorgeDownloadAPI(username, password);
         } else if (type.equals("hoydedata.no")) {
             dl = new Hoydedata();
+        } else if (type.equals("AvinorAIP")) {
+            dl = new AvinorAIPDownloader();
         }
 
         String dataset = options.get("dataset");

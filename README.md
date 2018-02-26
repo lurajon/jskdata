@@ -1,7 +1,7 @@
 # jskdata
 
 A java downloader for http://data.kartverket.no/download/ ,  https://download.geonorge.no/skdl2/,
-[GeoNorge Download API](https://www.geonorge.no/for-utviklere/APIer-og-grensesnitt/nedlastingsapiet/) and
+[GeoNorge Download API](https://www.geonorge.no/for-utviklere/APIer-og-grensesnitt/nedlastingsapiet/) , 
 [Hoydedata](http://www.hoydedata.no/Laserinnsyn).
 
 ## Maven
@@ -63,6 +63,10 @@ mvn -Ddata.kartverket.no.username=... \
     -Dgeonorge.username=... \
     -Dgeonorge.password=... test
 ```
+
+## Legal
+
+This is just for examples on how to download from some public sites. It is important for every user to follow every instruction on every web page they download data. So please, make sure to have your agreements in place before downloading anything using this code or similar code.
 
 ## Thanks
 * [@atlefren](https://github.com/atlefren/) for [skdata](https://github.com/atlefren/skdata) that jskdatas `KartverketDownload` is mostly a java variant of.
