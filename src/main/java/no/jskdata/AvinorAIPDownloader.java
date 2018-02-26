@@ -60,7 +60,7 @@ public class AvinorAIPDownloader extends Downloader {
             feature.setProperty("icao", icao);
 
             // find PDFs for ICAO
-            List<String> attachments = new ArrayList<>();
+            List<Attachment> attachments = new ArrayList<>();
             r = Jsoup.connect(u).execute();
             d = r.parse();
             for (Element pdfElement : d.select("a[href]")) {
@@ -76,13 +76,13 @@ public class AvinorAIPDownloader extends Downloader {
                 if (!url.toLowerCase().contains(icao.toLowerCase())) {
                     continue;
                 }
-                attachments.add(url);
+                attachments.add(new Attachment(pdfElement.text().trim(), url));
             }
             feature.setProperty("attachments", attachments);
 
             // parse first pdf and look for coordinate
             if (!attachments.isEmpty()) {
-                String mainPdfUrl = attachments.get(0);
+                String mainPdfUrl = attachments.get(0).getUrl();
                 HttpURLConnection conn = (HttpURLConnection) new URL(mainPdfUrl).openConnection();
                 if (conn.getResponseCode() != 200) {
                     throw new IOException("could not get " + mainPdfUrl);
@@ -112,8 +112,7 @@ public class AvinorAIPDownloader extends Downloader {
             }
         }
 
-        byte[] data = new Gson().toJson(features).getBytes("UTF-8"); 
-        System.out.println(new Gson().toJson(features));
+        byte[] data = new Gson().toJson(features).getBytes("UTF-8");
         receiver.receive("avinor_aip.geojson", new ByteArrayInputStream(data));
     }
 
@@ -132,6 +131,27 @@ public class AvinorAIPDownloader extends Downloader {
 
     @Override
     public void clear() {
+    }
+
+    private static class Attachment {
+
+        private String name;
+        private String url;
+
+        public Attachment(String name, String url) {
+            this.name = name;
+            this.url = url;
+        }
+
+        @SuppressWarnings("unused")
+        public String getName() {
+            return name;
+        }
+
+        public String getUrl() {
+            return url;
+        }
+
     }
 
 }

@@ -17,6 +17,10 @@ public class Feature {
         properties.put(key, value);
     }
     
+    public Object getProperty(String key) {
+        return properties.get(key);
+    }
+    
     public void setGeometry(Geometry geometry) {
         this.geometry = geometry;
     }

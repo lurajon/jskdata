@@ -24,12 +24,19 @@ public class AvinorAIPDownloaderTest extends TestCase {
             features.addAll(fc.getFeatures());
         });
         assertEquals(2, features.size());
+        for (Feature feature : features) {
+            List<?> attachments = (List<?>) feature.getProperty("attachments");
+            assertNotNull(attachments);
+            assertFalse(attachments.isEmpty());
+        }
     }
-    
+
     public void testParseCoordinatePart() {
         // 623345N 0060711E
-        assertEquals(62.0 + (33.0 / 60.0) + (45.0 / (60.0 * 60.0)), AvinorAIPDownloader.parseCoordinatePart("623345N", 2), 0.0003);
-        assertEquals(6.0 + (7.0 / 60.0) + (11.0 / (60.0 * 60.0)), AvinorAIPDownloader.parseCoordinatePart("0060711E", 3), 0.0003);
+        assertEquals(62.0 + (33.0 / 60.0) + (45.0 / (60.0 * 60.0)),
+                AvinorAIPDownloader.parseCoordinatePart("623345N", 2), 0.0003);
+        assertEquals(6.0 + (7.0 / 60.0) + (11.0 / (60.0 * 60.0)),
+                AvinorAIPDownloader.parseCoordinatePart("0060711E", 3), 0.0003);
     }
 
 }
