@@ -15,7 +15,7 @@ A java downloader for http://data.kartverket.no/download/ ,  https://download.ge
 <dependency>
     <groupId>no.jskdata</groupId>
     <artifactId>jskdata</artifactId>
-    <version>1.0.8</version>
+    <version>1.0.9</version>
 </dependency>
 ````
 
