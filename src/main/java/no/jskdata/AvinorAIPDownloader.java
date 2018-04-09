@@ -93,13 +93,11 @@ public class AvinorAIPDownloader extends Downloader {
                 String text = pdfTextStripper.getText(document);
 
                 // search for, extract and parse coordinate
-                Pattern pattern = Pattern.compile("([0-9]{6}[N]{1}) ([0-9]{7}[E]{1})");
-                Matcher matcher = pattern.matcher(text);
-                while (matcher.find()) {
+                Matcher matcher = matcher(text);
+                if (matcher.find()) {
                     double y = parseCoordinatePart(matcher.group(1), 2);
                     double x = parseCoordinatePart(matcher.group(2), 3);
                     feature.setGeometry(new Point(x, y));
-                    break;
                 }
 
                 document.close();
@@ -115,15 +113,20 @@ public class AvinorAIPDownloader extends Downloader {
         byte[] data = new Gson().toJson(features).getBytes("UTF-8");
         receiver.receive("avinor_aip.geojson", new ByteArrayInputStream(data));
     }
+    
+    static Matcher matcher(String text) {
+        Pattern pattern = Pattern.compile("([0-9.]{6,9}[N]{1}) ([0-9.]{7,10}[E]{1})");
+        return pattern.matcher(text);
+    }
 
     static double parseCoordinatePart(String encoded, int degreeDigits) {
-        if (encoded.length() != (degreeDigits + 5)) {
+        if (!((encoded.length() == (degreeDigits + 5)) || (encoded.length() == (degreeDigits + 8)))) {
             throw new IllegalArgumentException("wrong coordinate part: " + encoded);
         }
 
         double v = Double.parseDouble(encoded.substring(0, degreeDigits));
         double minutes = Double.parseDouble(encoded.substring(degreeDigits, degreeDigits + 2));
-        double seconds = Double.parseDouble(encoded.substring(degreeDigits + 2, degreeDigits + 4));
+        double seconds = Double.parseDouble(encoded.substring(degreeDigits + 2, encoded.length() - 1));
         minutes = minutes + (seconds / 60.0);
         v = v + (minutes / 60.0);
         return v;

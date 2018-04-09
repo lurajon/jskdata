@@ -5,6 +5,7 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
 
 import com.google.gson.Gson;
 
@@ -31,12 +32,36 @@ public class AvinorAIPDownloaderTest extends TestCase {
         }
     }
 
+    public void testMatcher() {
+        Matcher matcher = AvinorAIPDownloader.matcher("whatever 583106N 0084227E, REF");
+        assertTrue(matcher.find());
+        assertEquals("583106N", matcher.group(1));
+        assertEquals("0084227E", matcher.group(2));
+
+        matcher = AvinorAIPDownloader.matcher("whatever 583106.33N 0084227.89E, REF");
+        assertTrue(matcher.find());
+        assertEquals("583106.33N", matcher.group(1));
+        assertEquals("0084227.89E", matcher.group(2));
+    }
+
     public void testParseCoordinatePart() {
         // 623345N 0060711E
         assertEquals(62.0 + (33.0 / 60.0) + (45.0 / (60.0 * 60.0)),
-                AvinorAIPDownloader.parseCoordinatePart("623345N", 2), 0.0003);
+                AvinorAIPDownloader.parseCoordinatePart("623345N", 2), 0.00003);
         assertEquals(6.0 + (7.0 / 60.0) + (11.0 / (60.0 * 60.0)),
-                AvinorAIPDownloader.parseCoordinatePart("0060711E", 3), 0.0003);
+                AvinorAIPDownloader.parseCoordinatePart("0060711E", 3), 0.00003);
+
+        // 623345.00N 0060711.00E
+        assertEquals(62.0 + (33.0 / 60.0) + (45.0 / (60.0 * 60.0)),
+                AvinorAIPDownloader.parseCoordinatePart("623345.00N", 2), 0.00003);
+        assertEquals(6.0 + (7.0 / 60.0) + (11.0 / (60.0 * 60.0)),
+                AvinorAIPDownloader.parseCoordinatePart("0060711.00E", 3), 0.00003);
+
+        // 623345.50N 0060711.500E
+        assertEquals(62.0 + (33.0 / 60.0) + (45.5 / (60.0 * 60.0)),
+                AvinorAIPDownloader.parseCoordinatePart("623345.50N", 2), 0.00003);
+        assertEquals(6.0 + (7.0 / 60.0) + (11.5 / (60.0 * 60.0)),
+                AvinorAIPDownloader.parseCoordinatePart("0060711.50E", 3), 0.00003);
     }
 
 }
