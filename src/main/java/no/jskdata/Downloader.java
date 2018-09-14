@@ -67,8 +67,6 @@ public abstract class Downloader {
         Downloader dl = new NoDownloader();
         if ("url".equals(type)) {
             dl = new URLDownloader();
-        } else if (hasUserAndPass && "data.kartverket.no".equals(type)) {
-            dl = new KartverketDownload(username, password);
         } else if (hasUserAndPass && type.equals("GeoNorgeSkdl2")) {
             dl = new GeoNorgeSkdl2(username, password);
         } else if (type.equals("GeoNorgeDownloadAPI")) {

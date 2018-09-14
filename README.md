@@ -1,6 +1,6 @@
 # jskdata
 
-A java downloader for http://data.kartverket.no/download/ ,  https://download.geonorge.no/skdl2/,
+A java downloader for https://download.geonorge.no/skdl2/,
 [GeoNorge Download API](https://www.geonorge.no/for-utviklere/APIer-og-grensesnitt/nedlastingsapiet/) , 
 [Hoydedata](http://www.hoydedata.no/Laserinnsyn).
 
@@ -21,12 +21,6 @@ A java downloader for http://data.kartverket.no/download/ ,  https://download.ge
 
 ## Usage
 ```
-  // download from http://data.kartverket.no/download/
-  Downloader kd = new KartverketDownload(username, password);
-  kd.dataset("administrative-fylker-utm-32-fylkesinndeling");
-  kd.download((fileName, in) -> { # or implement Receiver
-  });
-  
   // download from https://download.geonorge.no/skdl2/
   // NB: different username/password than the public http://data.kartverket.no/download/
   Downloader skdl2 = new GeoNorgeSkdl2(geonorgeUsername, geonorgePassword);
@@ -58,10 +52,7 @@ A java downloader for http://data.kartverket.no/download/ ,  https://download.ge
 
 ## Test
 ```
-mvn -Ddata.kartverket.no.username=... \
-    -Ddata.kartverket.no.password=... \
-    -Dgeonorge.username=... \
-    -Dgeonorge.password=... test
+mvn -Dgeonorge.username=... -Dgeonorge.password=... test
 ```
 
 ## Legal
@@ -69,7 +60,7 @@ mvn -Ddata.kartverket.no.username=... \
 This is just for examples on how to download from some public sites. It is important for every user to follow every instruction on every web page they download data. So please, make sure to have your agreements in place before downloading anything using this code or similar code.
 
 ## Thanks
-* [@atlefren](https://github.com/atlefren/) for [skdata](https://github.com/atlefren/skdata) that jskdatas `KartverketDownload` is mostly a java variant of.
+* [@atlefren](https://github.com/atlefren/) for [skdata](https://github.com/atlefren/skdata) that jskdatas `KartverketDownload` was mostly a java variant of.
 * [@jhy](https://github.com/jhy/) for [jsoup](https://github.com/jhy/jsoup) that jskdata uses for HTML parsing.
 * [@bgrotan](https://github.com/bgrotan/) for adding support for [Hoydedata](http://www.hoydedata.no/Laserinnsyn).
 * Google for Gson and Guava.
