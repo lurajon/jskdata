@@ -39,6 +39,10 @@ import com.google.gson.Gson;
 /**
  * Downloading from http://nedlasting.nve.no/gis/ . This require polling a mail
  * server for the response.
+ * 
+ * NB: Do not attempt to run more than one simultaneous {@link NVEDownloader} for
+ * the same mail address as there are no way to figure out what downloaded zip
+ * archive belonging to what request.
  */
 public class NVEDownloader extends Downloader {
 
