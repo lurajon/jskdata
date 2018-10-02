@@ -37,7 +37,8 @@ import org.apache.commons.lang3.time.DateUtils;
 import com.google.gson.Gson;
 
 /**
- * Downloading from
+ * Downloading from http://nedlasting.nve.no/gis/ . This require polling a mail
+ * server for the response.
  */
 public class NVEDownloader extends Downloader {
 
