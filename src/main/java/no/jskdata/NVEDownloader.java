@@ -11,13 +11,13 @@ import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
@@ -32,6 +32,7 @@ import javax.mail.Store;
 import javax.mail.URLName;
 import javax.mail.search.SearchTerm;
 
+import org.apache.commons.collections4.map.ListOrderedMap;
 import org.apache.commons.lang3.time.DateUtils;
 
 import com.google.gson.Gson;
@@ -49,7 +50,7 @@ public class NVEDownloader extends Downloader {
     private final String mailAddress;
     private final String mailServer;
 
-    private final Map<String, String> parameters = new HashMap<>();
+    private final Map<String, String> parameters = new ListOrderedMap<>();
     private final Set<String> datasets = new HashSet<>();
 
     /**
@@ -74,17 +75,18 @@ public class NVEDownloader extends Downloader {
         if (mailServer == null || mailServer.length() == 0) {
             throw new IllegalArgumentException("Missing mailServer");
         }
-
-        parameters.put("BRUK", "Ikke gitt");
-        parameters.put("BRUKER", "Ikke gitt");
+        
+        parameters.put("opt_requesteremail", mailAddress);
+        parameters.put("EPOST", mailAddress);
+        parameters.put("FORMAT", "SHAPE");
+        parameters.put("KOORDS", "EPSG:4326");
         parameters.put("FIRMA", "Ikke gitt");
+        parameters.put("BRUKER", "Ikke gitt");
+        parameters.put("BRUK", "Ikke gitt");
         parameters.put("KOMMENTAR", "NULL");
         parameters.put("UTTREKKSTYPE", "LAND");
         parameters.put("KLIPPETYPE", "SomOverlapper");
-        parameters.put("KOORDS", "EPSG:4326");
-        parameters.put("FORMAT", "SHAPE");
-        parameters.put("opt_requesteremail", mailAddress);
-        parameters.put("EPOST", mailAddress);
+        
     }
 
     /**
@@ -148,9 +150,9 @@ public class NVEDownloader extends Downloader {
             }
             name1s.append(def.getName1());
         }
-        Map<String, String> params = new HashMap<>(parameters);
-        params.put("KARTLAG", name0s.toString());
-        params.put("NAME1", name1s.toString());
+        ListOrderedMap<String, String> params = new ListOrderedMap<>();
+        params.putAll(parameters);
+        params.put(8, "KARTLAG", name0s.toString());
 
         // useful to warn user if the data set has not been found
         if (!datasets.isEmpty()) {

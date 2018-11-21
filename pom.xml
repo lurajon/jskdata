@@ -4,7 +4,7 @@
     <groupId>no.jskdata</groupId>
     <artifactId>jskdata</artifactId>
     <packaging>jar</packaging>
-    <version>1.0.12</version>
+    <version>1.0.13</version>
     <name>jskdata</name>
     <url>http://maven.apache.org</url>
     <properties>
@@ -39,6 +39,11 @@
           <artifactId>pdfbox</artifactId>
           <version>2.0.11</version>
         </dependency>
+        <dependency>
+    		<groupId>org.apache.commons</groupId>
+    		<artifactId>commons-collections4</artifactId>
+    		<version>4.2</version>
+		</dependency>
         <dependency>
             <groupId>javax.mail</groupId>
             <artifactId>mail</artifactId>
