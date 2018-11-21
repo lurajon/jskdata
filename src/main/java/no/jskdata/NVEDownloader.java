@@ -13,8 +13,10 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -31,7 +33,6 @@ import javax.mail.Store;
 import javax.mail.URLName;
 import javax.mail.search.SearchTerm;
 
-import org.apache.commons.collections4.map.ListOrderedMap;
 import org.apache.commons.lang3.time.DateUtils;
 
 import com.google.gson.Gson;
@@ -49,7 +50,7 @@ public class NVEDownloader extends Downloader {
     private final String mailAddress;
     private final String mailServer;
 
-    private final Map<String, String> parameters = new ListOrderedMap<>();
+    private final Map<String, String> parameters = new LinkedHashMap<>();
     private final Set<String> datasets = new HashSet<>();
 
     /**
@@ -149,10 +150,16 @@ public class NVEDownloader extends Downloader {
             }
             name1s.append(def.getName1());
         }
-        ListOrderedMap<String, String> params = new ListOrderedMap<>();
-        params.putAll(parameters);
-        params.put(8, "KARTLAG", name0s.toString());
-
+        Map<String, String> params = new LinkedHashMap<>();
+        
+        for (Entry<String, String> entry : parameters.entrySet()) {
+        	if (entry.getKey().equals("UTTREKKSTYPE")) {
+        		// insert KARTLAG before UTTREKKSTYPE
+        		params.put("KARTLAG", name0s.toString());
+        	}
+        	params.put(entry.getKey(), entry.getValue());
+        }
+       
         // useful to warn user if the data set has not been found
         if (!datasets.isEmpty()) {
             throw new IOException("Could not find all datasets. Missing " + datasets);
