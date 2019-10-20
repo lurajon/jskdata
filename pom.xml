@@ -7,6 +7,15 @@
     <version>1.0.12</version>
     <name>jskdata</name>
     <url>http://maven.apache.org</url>
+    
+    <distributionManagement>
+	   	<repository>
+	     	<id>github</id>
+	     	<name>GitHub lurajon Apache Maven Packages</name>
+	     	<url>https://maven.pkg.github.com/lurajon/jskdata</url>
+	   	</repository>
+	</distributionManagement>
+    
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
